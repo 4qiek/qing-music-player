@@ -49,5 +49,16 @@ contextBridge.exposeInMainWorld('qingAPI', {
     const listener = (_e, data) => cb(data);
     ipcRenderer.on('lyric:data', listener);
     return () => ipcRenderer.removeListener('lyric:data', listener);
+  },
+  // 浏览器模式（内嵌浏览器）
+  browserOpen: (opts) => ipcRenderer.send('browser:open', opts),
+  browserNavigate: (url) => ipcRenderer.send('browser:navigate', url),
+  browserGo: (action) => ipcRenderer.send('browser:go', action),
+  browserSetIncognito: (on) => ipcRenderer.send('browser:setIncognito', on),
+  browserClose: () => ipcRenderer.send('browser:close'),
+  onBrowserEvent: (cb) => {
+    const listener = (_e, data) => cb(data);
+    ipcRenderer.on('browser:event', listener);
+    return () => ipcRenderer.removeListener('browser:event', listener);
   }
 });

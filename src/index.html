@@ -39,6 +39,14 @@
   <symbol id="i-shuffle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 3h5v5M4 20 21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/></symbol>
   <symbol id="i-repeat" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M17 2l4 4-4 4M3 11V9a4 4 0 0 1 4-4h14M7 22l-4-4 4-4M21 13v2a4 4 0 0 1-4 4H3"/></symbol>
   <symbol id="i-repeat1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M17 2l4 4-4 4M3 11V9a4 4 0 0 1 4-4h14M7 22l-4-4 4-4M21 13v2a4 4 0 0 1-4 4H3"/><path d="M8 7h0"/></symbol>
+  <symbol id="i-video" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="14" height="14" rx="2"/><path d="m16 10 6-3v10l-6-3"/></symbol>
+  <symbol id="i-globe" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a15 15 0 0 1 0 18 15 15 0 0 1 0-18z"/></symbol>
+  <symbol id="i-lock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></symbol>
+  <symbol id="i-download" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0 4-4m-4 4-4-4M4 21h16"/></symbol>
+  <symbol id="i-home2" viewBox="0 0 24 24" fill="currentColor"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></symbol>
+  <symbol id="i-back" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5m0 0 6 6m-6-6 6-6"/></symbol>
+  <symbol id="i-fwd" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14m0 0-6-6m6 6-6 6"/></symbol>
+  <symbol id="i-refresh" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.64-6.36M21 3v6h-6"/></symbol>
 </svg>
 
 <!-- ===== 顶部栏 ===== -->
@@ -92,6 +100,13 @@
     <div class="nav-item" data-view="history" role="button" tabindex="0">
       <svg><use href="#i-clock"/></svg> 播放历史
     </div>
+    <div class="nav-section">工具</div>
+    <div class="nav-item" data-view="video" role="button" tabindex="0">
+      <svg><use href="#i-video"/></svg> 视频
+    </div>
+    <div class="nav-item" id="browserNav" role="button" tabindex="0" title="内嵌浏览器（支持无痕模式）">
+      <svg><use href="#i-globe"/></svg> 浏览器
+    </div>
     <div class="nav-section" id="playlistSection" style="display:none;">我的歌单</div>
     <div id="playlistNav"></div>
 
@@ -111,6 +126,17 @@
 
   <!-- 两栏工作区 -->
   <div class="workspace">
+
+    <!-- ===== 浏览器工具条（内嵌浏览器模式） ===== -->
+    <div class="browser-bar" id="browserBar" role="toolbar" aria-label="浏览器工具栏" style="display:none;">
+      <button class="b-btn" id="browserBack" title="后退" aria-label="后退"><svg><use href="#i-back"/></svg></button>
+      <button class="b-btn" id="browserFwd" title="前进" aria-label="前进"><svg><use href="#i-fwd"/></svg></button>
+      <button class="b-btn" id="browserReload" title="刷新" aria-label="刷新"><svg><use href="#i-refresh"/></svg></button>
+      <button class="b-btn" id="browserHome" title="主页" aria-label="主页"><svg><use href="#i-home2"/></svg></button>
+      <input type="text" id="browserAddr" placeholder="输入网址或搜索关键词，回车打开" spellcheck="false" aria-label="地址栏">
+      <button class="b-btn incog" id="browserIncognito" title="无痕模式：不保存浏览记录和 Cookie，关闭即清除" aria-label="无痕模式"><svg><use href="#i-lock"/></svg></button>
+      <button class="b-btn" id="browserClose" title="关闭浏览器" aria-label="关闭浏览器"><svg><use href="#i-close"/></svg></button>
+    </div>
     <!-- 左栏：封面 + 播放控制 + 歌词 -->
     <section class="panel-left" aria-label="播放面板">
       <div class="main-cover-wrap">
@@ -225,6 +251,14 @@
             <button class="btn" id="historyClear">清空</button>
           </div>
           <div class="song-list" id="historyList"></div>
+        </div>
+        <div id="view-video" style="display:none;">
+          <div class="content-header">
+            <div><h2>本地视频</h2><div class="sub">导入本地视频文件（MP4 / WebM 等），点击全屏播放</div></div>
+            <button class="btn btn-primary" id="videoImportBtn">+ 导入视频</button>
+            <input type="file" id="videoFileInput" accept="video/*" multiple style="display:none;">
+          </div>
+          <div class="song-list" id="videoList"></div>
         </div>
       </div>
 
@@ -376,6 +410,15 @@
 </div>
 
 <audio id="audio" crossorigin="anonymous" preload="metadata"></audio>
+
+<!-- ===== 全屏视频播放器 ===== -->
+<div class="video-player" id="videoPlayerOverlay" role="dialog" aria-label="视频播放器" style="display:none;">
+  <div class="vp-topbar">
+    <span class="vp-title" id="videoPlayerTitle">视频</span>
+    <button class="vp-close" id="videoPlayerClose" title="关闭 (Esc)" aria-label="关闭视频"><svg><use href="#i-close"/></svg></button>
+  </div>
+  <video id="videoPlayer" controls playsinline preload="metadata"></video>
+</div>
 
 <script type="module" src="./js/app.js"></script>
 </body>

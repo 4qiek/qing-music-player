@@ -28,6 +28,8 @@ import { initSleepTimer } from './sleepTimer.js';
 import { initMini } from './mini.js';
 import { initDesktopLyric, toggleDesktopLyric } from './desktopLyric.js';
 import * as visualizer from './visualizer.js';
+import { initVideo } from './video.js';
+import { initBrowser } from './browser.js';
 
 export { switchView };
 
@@ -63,6 +65,8 @@ export function initApp() {
   initSleepTimer();
   initMini();
   initDesktopLyric();
+  initVideo();
+  initBrowser();
 
   // 播放模式切换
   const modeBtn = document.getElementById('playModeBtn');

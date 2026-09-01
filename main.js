@@ -877,3 +877,135 @@ app.whenReady().then(() => {
 app.on('will-quit', () => {
   try { globalShortcut.unregisterAll(); } catch (e) { /* ignore */ }
 });
+
+
+// ============================================================
+// 浏览器模式：内嵌浏览器（BrowserView）+ 无痕会话 + 下载
+// ============================================================
+const { BrowserView, session, dialog } = require('electron');
+
+let browserView = null;
+let browserIncognito = true;   // 默认无痕（非持久 session，关闭即清）
+
+function sendBrowserEvent(data) {
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.webContents.send('browser:event', data);
+  }
+}
+
+// 下载处理：弹保存对话框，选择路径后下载，完成后通知渲染层
+async function handleBrowserDownload(e, item) {
+  e.preventDefault();
+  const { canceled, filePath } = await dialog.showSaveDialog(mainWindow, {
+    title: '保存文件',
+    defaultPath: path.join(app.getPath('downloads'), item.getFilename())
+  });
+  if (canceled || !filePath) return;
+  item.setSavePath(filePath);
+  sendBrowserEvent({ type: 'download:start', filename: item.getFilename() });
+  item.once('done', (ev, state) => {
+    sendBrowserEvent({ type: 'download:done', state, filename: item.getFilename() });
+  });
+}
+
+// 创建浏览器会话：无痕=随机非持久 partition（不落盘，关闭即清）；普通=defaultSession（持久）
+function makeBrowserSession(incognito) {
+  if (!incognito) {
+    if (!session.defaultSession.listenerCount('will-download')) {
+      session.defaultSession.on('will-download', handleBrowserDownload);
+    }
+    return session.defaultSession;
+  }
+  const part = 'qing-incog-' + Date.now() + '-' + Math.random().toString(36).slice(2, 10);
+  const s = session.fromPartition(part);
+  s.on('will-download', handleBrowserDownload);
+  return s;
+}
+
+function ensureBrowserView() {
+  if (browserView && !browserView.webContents.isDestroyed()) return browserView;
+  const ses = makeBrowserSession(browserIncognito);
+  browserView = new BrowserView({
+    webPreferences: {
+      session: ses,
+      nodeIntegration: false,
+      contextIsolation: true,
+      webSecurity: true
+    }
+  });
+  const wc = browserView.webContents;
+  wc.on('did-navigate', (_e, url) => sendBrowserEvent({ type: 'nav', url }));
+  wc.on('did-navigate-in-page', (_e, url) => sendBrowserEvent({ type: 'nav', url }));
+  wc.on('page-title-updated', (_e, title) => sendBrowserEvent({ type: 'title', title }));
+  return browserView;
+}
+
+// 定位：避开顶栏(≈56px)与浏览器工具条(≈48px)，从侧边栏(≈180px)右侧开始
+function layoutBrowserView() {
+  if (!mainWindow || mainWindow.isDestroyed()) return;
+  if (!browserView || browserView.webContents.isDestroyed()) return;
+  const [w, h] = mainWindow.getContentSize();
+  browserView.setBounds({ x: 204, y: 104, width: Math.max(240, w - 204), height: Math.max(200, h - 104) });
+}
+
+ipcMain.on('browser:open', (e, opts = {}) => {
+  if (opts.incognito != null) browserIncognito = !!opts.incognito;
+  const bv = ensureBrowserView();
+  mainWindow.setBrowserView(bv);
+  layoutBrowserView();
+  mainWindow.removeListener('resize', layoutBrowserView);
+  mainWindow.on('resize', layoutBrowserView);
+  const raw = (opts.url && String(opts.url).trim()) || 'https://www.baidu.com';
+  const url = /^https?:\/\//i.test(raw) ? raw : 'https://' + raw;
+  bv.webContents.loadURL(url);
+  sendBrowserEvent({ type: 'ready' });
+});
+
+ipcMain.on('browser:navigate', (e, url) => {
+  if (!browserView || browserView.webContents.isDestroyed()) return;
+  let u = String(url || '').trim();
+  if (!u) return;
+  if (!/^https?:\/\//i.test(u)) u = 'https://' + u;
+  browserView.webContents.loadURL(u);
+});
+
+ipcMain.on('browser:go', (e, action) => {
+  if (!browserView || browserView.webContents.isDestroyed()) return;
+  const wc = browserView.webContents;
+  if (action === 'back' && wc.canGoBack()) wc.goBack();
+  else if (action === 'forward' && wc.canGoForward()) wc.goForward();
+  else if (action === 'reload') wc.reload();
+  else if (action === 'home') wc.loadURL('https://www.baidu.com');
+});
+
+// 无痕开关：切换时销毁重建 BrowserView（session 不可热切换）
+ipcMain.on('browser:setIncognito', (e, on) => {
+  const changed = browserIncognito !== !!on;
+  browserIncognito = !!on;
+  if (!changed) return;
+  const cur = browserView && !browserView.webContents.isDestroyed()
+    ? browserView.webContents.getURL() : '';
+  if (browserView) {
+    try { mainWindow.removeBrowserView(browserView); } catch {}
+    try { browserView.webContents.destroy(); } catch {}
+  }
+  browserView = null;
+  const bv = ensureBrowserView();
+  mainWindow.setBrowserView(bv);
+  layoutBrowserView();
+  if (cur) bv.webContents.loadURL(cur);
+  sendBrowserEvent({ type: 'incognito', on: browserIncognito });
+});
+
+ipcMain.on('browser:close', () => {
+  if (mainWindow && browserView) {
+    try { mainWindow.removeBrowserView(browserView); } catch {}
+  }
+  if (browserView) {
+    try { browserView.webContents.destroy(); } catch {}
+  }
+  browserView = null;
+  mainWindow.removeListener('resize', layoutBrowserView);
+  sendBrowserEvent({ type: 'closed' });
+});
+

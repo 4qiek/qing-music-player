@@ -6,7 +6,7 @@ import { store } from './store.js';
 
 const $ = (id) => document.getElementById(id);
 
-const VIEW_IDS = ['local', 'search', 'playlist', 'toplist', 'recommend', 'favorites', 'history'];
+const VIEW_IDS = ['local', 'search', 'playlist', 'toplist', 'recommend', 'favorites', 'history', 'video'];
 
 // 进入某视图时派发懒加载事件（由对应模块监听）
 const LOAD_EVENT = {
@@ -25,6 +25,8 @@ export function switchView(view) {
   if (LOAD_EVENT[view]) {
     document.dispatchEvent(new CustomEvent(LOAD_EVENT[view]));
   }
+  // 通知其他模块（如浏览器模式需关闭）
+  document.dispatchEvent(new CustomEvent('view:switched', { detail: { view } }));
 }
 
 export function initNavigation() {

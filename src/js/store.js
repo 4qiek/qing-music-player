@@ -8,6 +8,7 @@ import { eventBus } from './eventBus.js';
 const initialState = {
   // 播放相关
   localTracks: [],
+  localVideos: [],
   searchResults: [],
   currentQueue: [],
   currentIndex: -1,
