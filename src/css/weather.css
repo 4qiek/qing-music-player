@@ -218,10 +218,14 @@
    3日预报卡片
    ========================================================================== */
 .wp-forecast {
+  position: absolute;
+  left: 36px;
+  top: 50%;
+  transform: translateY(-50%);
   display: flex;
-  gap: 12px;
-  margin-top: 16px;
-  justify-content: center;
+  flex-direction: column;
+  gap: 10px;
+  z-index: 3;
 }
 .fc-card {
   background: var(--surface);
@@ -229,8 +233,8 @@
   -webkit-backdrop-filter: blur(10px);
   border: 1px solid var(--border);
   border-radius: 12px;
-  padding: 10px 16px;
-  min-width: 80px;
+  padding: 10px 14px;
+  min-width: 90px;
   text-align: center;
   display: flex;
   flex-direction: column;
