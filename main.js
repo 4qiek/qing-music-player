@@ -60,20 +60,28 @@ ipcMain.handle('netease:search', async (e, keyword) => {
   try {
     const res = await netease.search({ keywords: keyword, limit: 30, type: 1 });
     const songs = res.body?.result?.songs || [];
-    return songs.map(s => ({
+    const list = songs.map(s => ({
       id: s.id,
       name: s.name,
-      artist: (s.ar || []).map(a => a.name).join(' / '),
-      album: s.al?.name || '',
+      // 兼容网易云新旧接口字段（新版 artists/album/duration，旧版 ar/al/dt）
+      artist: ((s.artists || []).map(a => a.name).join(' / ')) || ((s.ar || []).map(a => a.name).join(' / ')),
+      album: s.album?.name || s.al?.name || '',
       cover: s.al?.picUrl || '',
-      duration: s.dt / 1000,
+      duration: (s.duration != null ? s.duration : (s.dt || 0)) / 1000,
       platform: 'netease'
     }));
+    // 新版 search 接口不带封面，用 song_detail 批量补（一次请求多个 id）
+    try {
+      const det = await netease.song_detail({ ids: list.map(x => x.id).join(',') });
+      const coverMap = {};
+      (det.body?.songs || []).forEach(d => { if (d?.al?.picUrl) coverMap[d.id] = d.al.picUrl; });
+      list.forEach(x => { if (!x.cover && coverMap[x.id]) x.cover = coverMap[x.id]; });
+    } catch {}
+    return list;
   } catch (err) {
     return { error: err.message };
   }
 });
-
 ipcMain.handle('netease:url', async (e, { id, level }) => {
   try {
     const res = await netease.song_url_v1({ id, level: level || 'standard' });
