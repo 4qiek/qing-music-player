@@ -53,6 +53,8 @@
   <symbol id="i-zoom-out" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3M8 11h6"/></symbol>
   <symbol id="i-font" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7V4h16v3M9 20h6M12 4v16"/></symbol>
   <symbol id="i-trash" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14M10 11v6M14 11v6"/></symbol>
+  <symbol id="i-cloud" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.5 19a4.5 4.5 0 0 0 .5-8.97A6 6 0 0 0 6.34 11 4 4 0 0 0 7 19h10.5z"/><path d="M12 12v6m0 0-2.2-2.2M12 18l2.2-2.2"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></symbol>
 </svg>
 
 <!-- ===== 顶部栏 ===== -->
@@ -219,8 +221,9 @@
           <div class="content-header">
             <div>
               <h2>本地音乐</h2>
-              <div class="sub">导入本地音频文件，支持 MP3 / FLAC / WAV / OGG 等格式</div>
+              <div class="sub">导入本地音频文件，支持 MP3 / FLAC / WAV / OGG 等格式；可联网匹配歌手、专辑、封面与歌词</div>
             </div>
+            <button class="btn" id="matchAllBtn" title="按歌名自动到网易云匹配歌手、专辑、封面和歌词">☁ 匹配线上信息</button>
             <button class="btn btn-primary" id="importBtn">+ 导入音乐</button>
             <input type="file" id="fileInput" accept="audio/*" multiple style="display:none;">
           </div>

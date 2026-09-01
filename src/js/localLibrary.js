@@ -1,13 +1,32 @@
 /**
  * localLibrary.js — 本地音乐管理
- * 负责本地文件的导入、列表渲染与播放入口。
+ * 负责本地文件的导入、列表渲染、播放入口，以及按歌名到网易云
+ * 在线匹配歌手 / 专辑 / 封面 / 歌词（matchedId）。
  */
 import { store } from './store.js';
 import { playLocal } from './player.js';
+import { apiClient } from './apiClient.js';
+import { eventBus } from './eventBus.js';
+import { sleep } from './utils.js';
 
 const $ = (id) => document.getElementById(id);
 
 const PLATFORM_LABEL = { netease: '网易', qq: 'QQ', kugou: '酷狗', local: '本地' };
+
+/** 由文件名构造搜索关键词：去扩展名、音质标签、多余符号 */
+function buildKeyword(name) {
+  return String(name || '')
+    .replace(/\.[^.]+$/, '')
+    .replace(/\b(320kbps|192kbps|128kbps|320|192|128|flac|mp3|无损|高品质|hq|sq)\b/gi, ' ')
+    .replace(/[【\[\(][^】\]\)]*(?:kbps|kb|比特率|音质)[】\]\)]/gi, ' ')
+    .replace(/[._]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function escapeName(str) {
+  return String(str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
 
 /** 绑定导入控件事件 */
 export function initLocalLibrary() {
@@ -24,12 +43,83 @@ export function initLocalLibrary() {
       cover: '',
       duration: 0,
       platform: 'local',
+      matchedId: null,
       file: f,
       url: URL.createObjectURL(f)
     }));
     store.set('localTracks', [...store.get('localTracks'), ...tracks]);
     renderLocalList();
     e.target.value = '';
+  });
+
+  // 一键匹配全部未匹配曲目
+  const matchAllBtn = $('matchAllBtn');
+  if (matchAllBtn) matchAllBtn.addEventListener('click', () => matchAllLocal());
+}
+
+/**
+ * 匹配单首本地曲目：按歌名搜网易云，取最佳结果补全元数据。
+ * @returns {Promise<object|null>} 命中的在线歌曲
+ */
+export async function matchLocal(idx) {
+  const tracks = store.get('localTracks');
+  const t = tracks[idx];
+  if (!t) return null;
+  const kw = buildKeyword(t.name);
+  if (!kw) return null;
+  let res;
+  try {
+    res = await apiClient.neteaseSearch(kw);
+  } catch (e) {
+    eventBus.emit('toast', { type: 'error', message: '网络异常，匹配失败' });
+    return null;
+  }
+  const list = res && !res.error && Array.isArray(res) ? res : [];
+  if (!list.length) return null;
+  // 同名优先，否则取第一条
+  const lc = kw.toLowerCase();
+  const hit = list.find((x) => x.name && x.name.toLowerCase() === lc) || list[0];
+  t.matchedId = hit.id;
+  t.matchedName = hit.name || t.name;
+  t.artist = hit.artist || t.artist;
+  t.album = hit.album || t.album || '';
+  t.cover = hit.cover || t.cover || '';
+  if (hit.duration) t.duration = hit.duration;
+  store.set('localTracks', tracks);
+  renderLocalList();
+  return hit;
+}
+
+/** 一键匹配所有尚未匹配的本地曲目（串行 + 间隔，避免请求过快） */
+export async function matchAllLocal() {
+  const tracks = store.get('localTracks');
+  if (!tracks.length) {
+    eventBus.emit('toast', { type: 'info', message: '请先导入本地音乐' });
+    return;
+  }
+  const need = tracks.map((t, i) => i).filter((i) => !tracks[i].matchedId);
+  if (!need.length) {
+    eventBus.emit('toast', { type: 'info', message: '全部曲目已匹配过了' });
+    return;
+  }
+  const btn = $('matchAllBtn');
+  if (btn) { btn.disabled = true; btn.textContent = `匹配中 0/${need.length}`; }
+  let ok = 0, fail = 0;
+  for (let n = 0; n < need.length; n++) {
+    const i = need[n];
+    if (btn) btn.textContent = `匹配中 ${n + 1}/${need.length}`;
+    try {
+      const hit = await matchLocal(i);
+      if (hit) ok++; else fail++;
+    } catch (e) {
+      fail++;
+    }
+    await sleep(280);
+  }
+  if (btn) { btn.disabled = false; btn.textContent = '☁ 匹配线上信息'; }
+  eventBus.emit('toast', {
+    type: fail ? 'info' : 'success',
+    message: `匹配完成：成功 ${ok} 首` + (fail ? `，${fail} 首未找到` : '')
   });
 }
 
@@ -46,15 +136,26 @@ export function renderLocalList() {
       </div>`;
     return;
   }
-  let html = '<div class="song-list-header"><span>#</span><span></span><span>标题</span><span>歌手</span><span style="text-align:right">时长</span><span></span></div>';
+  let html = '<div class="song-list-header"><span>#</span><span></span><span>标题</span><span>歌手</span><span style="text-align:right">时长</span><span>来源 / 操作</span></div>';
   localTracks.forEach((t, i) => {
-    html += `<div class="song-row" data-type="local" data-idx="${i}">
+    const coverHtml = t.cover
+      ? `<img class="s-cover" src="${t.cover}" alt="" loading="lazy" referrerpolicy="no-referrer">`
+      : `<div class="s-cover" style="background:var(--hover);display:flex;align-items:center;justify-content:center;"><svg style="width:16px;height:16px;color:var(--text2)"><use href="#i-music"/></svg></div>`;
+    const matched = !!t.matchedId;
+    const matchBtn = matched
+      ? `<button class="row-ok" data-match="${i}" title="已匹配：${escapeName(t.matchedName || t.name)}（点击重新匹配）" aria-label="重新匹配"><svg><use href="#i-check"/></svg></button>`
+      : `<button class="row-match" data-match="${i}" title="联网匹配歌手/专辑/封面/歌词" aria-label="匹配线上信息"><svg><use href="#i-cloud"/></svg></button>`;
+    html += `<div class="song-row ${matched ? 'matched' : ''}" data-type="local" data-idx="${i}">
       <span class="idx">${i + 1}</span>
-      <span><div class="s-cover" style="background:var(--hover);display:flex;align-items:center;justify-content:center;"><svg style="width:16px;height:16px;color:var(--text2)"><use href="#i-music"/></svg></div></span>
+      <span>${coverHtml}</span>
       <span class="s-name">${escapeName(t.name)}</span>
-      <span class="s-artist">${escapeName(t.artist)}</span>
+      <span class="s-artist">${escapeName(t.artist || '本地文件')}</span>
       <span class="s-dur">--:--</span>
-      <span class="s-platform">本地<button class="row-del" data-del="${i}" title="从列表中移除" aria-label="移除"><svg><use href="#i-trash"/></svg></button></span>
+      <span class="s-platform">
+        本地
+        ${matchBtn}
+        <button class="row-del" data-del="${i}" title="从列表中移除" aria-label="移除"><svg><use href="#i-trash"/></svg></button>
+      </span>
     </div>`;
   });
   el.innerHTML = html;
@@ -65,6 +166,16 @@ export function renderLocalList() {
     btn.addEventListener('click', (e) => {
       e.stopPropagation();
       removeLocal(+btn.dataset.del);
+    })
+  );
+  el.querySelectorAll('.row-match, .row-ok').forEach((btn) =>
+    btn.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      const idx = +btn.dataset.match;
+      btn.classList.add('loading');
+      const hit = await matchLocal(idx);
+      if (!hit) eventBus.emit('toast', { type: 'info', message: '未找到对应的线上歌曲' });
+      else eventBus.emit('toast', { type: 'success', message: `已匹配：${hit.artist || ''} - ${hit.name}` });
     })
   );
 }
@@ -80,8 +191,4 @@ export function removeLocal(idx) {
   renderLocalList();
 }
 
-function escapeName(str) {
-  return String(str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-}
-
-export default { initLocalLibrary, renderLocalList, removeLocal, PLATFORM_LABEL };
+export default { initLocalLibrary, renderLocalList, removeLocal, matchLocal, matchAllLocal, PLATFORM_LABEL };

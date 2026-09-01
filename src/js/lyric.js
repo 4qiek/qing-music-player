@@ -41,9 +41,14 @@ export async function loadLyric(track, lyricEl) {
   store.set('currentLyricIndex', -1);
 
   let lyricData = [];
-  if (track.platform === 'netease') {
+  // 网易云歌曲直接用 id；本地歌曲若已在线匹配，则用 matchedId 拉取在线歌词
+  let lyricId = null;
+  if (track.platform === 'netease') lyricId = track.id;
+  else if (track.platform === 'local' && track.matchedId) lyricId = track.matchedId;
+
+  if (lyricId) {
     try {
-      const res = await apiClient.neteaseLyric(track.id);
+      const res = await apiClient.neteaseLyric(lyricId);
       if (res && res.lrc) {
         lyricData = parseLRC(res.lrc);
         // 翻译歌词合并

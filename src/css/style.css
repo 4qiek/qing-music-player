@@ -1717,6 +1717,29 @@ body.mini-mode .np-controls { gap: 6px; }
 .row-del:hover { color: var(--error); background: var(--hover); }
 .row-del svg { width: 15px; height: 15px; }
 
+/* 本地音乐在线匹配按钮 */
+.row-match, .row-ok {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 5px;
+  margin-left: 4px;
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  vertical-align: middle;
+  transition: color .15s, background .15s;
+}
+.row-match { color: var(--text-3); }
+.row-match:hover { color: var(--info, #0a84ff); background: var(--hover); }
+.row-match svg, .row-ok svg { width: 15px; height: 15px; }
+.row-ok { color: var(--success, #34c759); }
+.row-ok:hover { color: var(--info, #0a84ff); background: var(--hover); }
+.row-match.loading { opacity: 0.5; pointer-events: none; animation: matchPulse 1s ease-in-out infinite; }
+@keyframes matchPulse { 0%,100% { opacity: .35; } 50% { opacity: .9; } }
+.song-row.matched .s-artist { color: var(--text); }
+
 .img-cell .img-del {
   position: absolute;
   top: 6px;
