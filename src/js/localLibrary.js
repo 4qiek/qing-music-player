@@ -1,7 +1,9 @@
 /**
  * localLibrary.js — 本地音乐管理
- * 负责本地文件的导入、列表渲染、播放入口，以及按歌名到网易云
- * 在线匹配歌手 / 专辑 / 封面 / 歌词（matchedId）。
+ * 负责本地文件导入、列表渲染、播放入口；
+ *  - 导入时读取内嵌 ID3 标签（标题/歌手/专辑/封面/歌词）
+ *  - 可按歌名到网易云在线匹配（matchedId，用于在线歌词补全）
+ *  - 同时支持手动选入(File)与文件夹/下载的路径项(path)
  */
 import { store } from './store.js';
 import { playLocal } from './player.js';
@@ -9,6 +11,7 @@ import { apiClient } from './apiClient.js';
 import { eventBus } from './eventBus.js';
 import { sleep } from './utils.js';
 import { bindCoverFallback } from './metaMatch.js';
+import { enrichAudio } from './mediaLib.js';
 
 const $ = (id) => document.getElementById(id);
 
@@ -29,6 +32,10 @@ function escapeName(str) {
   return String(str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
+function trackTitle(t) {
+  return t.matchedName || (t.name || '').replace(/\.[^.]+$/, '');
+}
+
 /** 绑定导入控件事件 */
 export function initLocalLibrary() {
   const fileInput = $('fileInput');
@@ -36,37 +43,47 @@ export function initLocalLibrary() {
 
   fileInput.addEventListener('change', (e) => {
     const files = Array.from(e.target.files || []);
-    const tracks = files.map((f) => ({
-      id: 'local_' + Date.now() + '_' + Math.random(),
-      name: f.name.replace(/\.[^.]+$/, ''),
-      artist: '本地文件',
-      album: '',
-      cover: '',
-      duration: 0,
-      platform: 'local',
-      matchedId: null,
-      file: f,
-      url: URL.createObjectURL(f)
-    }));
-    store.set('localTracks', [...store.get('localTracks'), ...tracks]);
+    const list = store.get('localTracks');
+    const exist = new Set(list.map((x) => (x.path || x.name) + '|' + (x.size || 0)));
+    const added = [];
+    files.forEach((f, k) => {
+      const key = f.name + '|' + f.size;
+      if (exist.has(key)) return;
+      exist.add(key);
+      const t = {
+        id: 'local_' + Date.now() + '_' + k + '_' + Math.random().toString(36).slice(2, 7),
+        origin: 'file', file: f,
+        name: f.name,
+        ext: (f.name.split('.').pop() || '').toLowerCase(),
+        size: f.size,
+        artist: '', album: '', cover: '', duration: 0,
+        platform: 'local', matchedId: null, matchedName: '', embeddedLyric: '',
+        url: URL.createObjectURL(f)
+      };
+      list.push(t);
+      added.push(t);
+    });
+    store.set('localTracks', list);
     renderLocalList();
+    added.forEach((t) => enrichAudio(t));
     e.target.value = '';
   });
 
-  // 一键匹配全部未匹配曲目
   const matchAllBtn = $('matchAllBtn');
   if (matchAllBtn) matchAllBtn.addEventListener('click', () => matchAllLocal());
+
+  // 媒体库变化（文件夹扫描 / 下载归库 / ID3 回填）时刷新
+  eventBus.on('library:changed', ({ kind }) => {
+    if (kind === 'audio' && store.get('view') === 'local') renderLocalList();
+  });
 }
 
-/**
- * 匹配单首本地曲目：按歌名搜网易云，取最佳结果补全元数据。
- * @returns {Promise<object|null>} 命中的在线歌曲
- */
+/** 匹配单首本地曲目：按歌名搜网易云，取最佳结果补全元数据 */
 export async function matchLocal(idx) {
   const tracks = store.get('localTracks');
   const t = tracks[idx];
   if (!t) return null;
-  const kw = buildKeyword(t.name);
+  const kw = buildKeyword(t.matchedName || t.name);
   if (!kw) return null;
   let res;
   try {
@@ -77,11 +94,10 @@ export async function matchLocal(idx) {
   }
   const list = res && !res.error && Array.isArray(res) ? res : [];
   if (!list.length) return null;
-  // 同名优先，否则取第一条
   const lc = kw.toLowerCase();
   const hit = list.find((x) => x.name && x.name.toLowerCase() === lc) || list[0];
   t.matchedId = hit.id;
-  t.matchedName = hit.name || t.name;
+  t.matchedName = hit.name || trackTitle(t);
   t.artist = hit.artist || t.artist;
   t.album = hit.album || t.album || '';
   t.cover = hit.cover || t.cover || '';
@@ -91,7 +107,7 @@ export async function matchLocal(idx) {
   return hit;
 }
 
-/** 一键匹配所有尚未匹配的本地曲目（串行 + 间隔，避免请求过快） */
+/** 一键匹配所有尚未匹配在线信息的本地曲目 */
 export async function matchAllLocal() {
   const tracks = store.get('localTracks');
   if (!tracks.length) {
@@ -112,9 +128,7 @@ export async function matchAllLocal() {
     try {
       const hit = await matchLocal(i);
       if (hit) ok++; else fail++;
-    } catch (e) {
-      fail++;
-    }
+    } catch (e) { fail++; }
     await sleep(280);
   }
   if (btn) { btn.disabled = false; btn.textContent = '☁ 匹配线上信息'; }
@@ -127,13 +141,14 @@ export async function matchAllLocal() {
 /** 渲染本地列表 */
 export function renderLocalList() {
   const el = $('localList');
+  if (!el) return;
   const localTracks = store.get('localTracks');
   if (localTracks.length === 0) {
     el.innerHTML = `
       <div class="empty-state">
         <div class="big-icon"><svg style="width:48px;height:48px"><use href="#i-music"/></svg></div>
         <p>还没有导入音乐</p>
-        <button class="btn btn-primary" onclick="document.getElementById('fileInput').click()">选择本地文件</button>
+        <p class="sub-hint">可「导入音乐」或「添加文件夹」自动扫描</p>
       </div>`;
     return;
   }
@@ -142,16 +157,16 @@ export function renderLocalList() {
     const coverHtml = t.cover
       ? `<img class="s-cover" src="${t.cover}" alt="" loading="lazy" referrerpolicy="no-referrer">`
       : `<div class="s-cover" style="background:var(--hover);display:flex;align-items:center;justify-content:center;"><svg style="width:16px;height:16px;color:var(--text2)"><use href="#i-music"/></svg></div>`;
-    const matched = !!t.matchedId;
-    const matchBtn = matched
+    const matched = !!(t.matchedId || t.matchedName);
+    const matchBtn = t.matchedId
       ? `<button class="row-ok" data-match="${i}" title="已匹配：${escapeName(t.matchedName || t.name)}（点击重新匹配）" aria-label="重新匹配"><svg><use href="#i-check"/></svg></button>`
       : `<button class="row-match" data-match="${i}" title="联网匹配歌手/专辑/封面/歌词" aria-label="匹配线上信息"><svg><use href="#i-cloud"/></svg></button>`;
     html += `<div class="song-row ${matched ? 'matched' : ''}" data-type="local" data-idx="${i}">
       <span class="idx">${i + 1}</span>
       <span>${coverHtml}</span>
-      <span class="s-name">${escapeName(t.name)}</span>
-      <span class="s-artist">${escapeName(t.artist || '本地文件')}</span>
-      <span class="s-dur">--:--</span>
+      <span class="s-name">${escapeName(trackTitle(t))}</span>
+      <span class="s-artist">${escapeName(t.artist || '本地曲目')}</span>
+      <span class="s-dur">${t.duration ? fmtDur(t.duration) : '--:--'}</span>
       <span class="s-platform">
         本地
         ${matchBtn}
@@ -174,12 +189,16 @@ export function renderLocalList() {
     btn.addEventListener('click', async (e) => {
       e.stopPropagation();
       const idx = +btn.dataset.match;
-      btn.classList.add('loading');
       const hit = await matchLocal(idx);
       if (!hit) eventBus.emit('toast', { type: 'info', message: '未找到对应的线上歌曲' });
       else eventBus.emit('toast', { type: 'success', message: `已匹配：${hit.artist || ''} - ${hit.name}` });
     })
   );
+}
+
+function fmtDur(ms) {
+  const s = Math.round(ms / 1000);
+  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
 }
 
 /** 从本地列表移除指定项 */

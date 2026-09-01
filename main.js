@@ -5,6 +5,7 @@ const http = require('http');
 
 // 网易云音乐API
 const netease = require('NeteaseCloudMusicApi');
+const mainMedia = require('./main-media');
 
 let mainWindow = null;
 
@@ -32,6 +33,7 @@ function createWindow() {
 
 app.whenReady().then(() => {
   createWindow();
+  try { mainMedia.init(() => mainWindow); } catch (e) { console.error('mainMedia init', e); }
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
   });
@@ -958,7 +960,7 @@ async function handleBrowserDownload(e, item) {
   item.setSavePath(filePath);
   sendBrowserEvent({ type: 'download:start', filename: item.getFilename() });
   item.once('done', (ev, state) => {
-    sendBrowserEvent({ type: 'download:done', state, filename: item.getFilename() });
+    sendBrowserEvent({ type: 'download:done', state, filename: item.getFilename(), savePath: item.getSavePath() });
   });
 }
 

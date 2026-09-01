@@ -3,6 +3,7 @@
  * 职责：图片导入、缩略图网格、全屏查看（缩放 + 上一张/下一张）。
  */
 import { store } from './store.js';
+import { eventBus } from './eventBus.js';
 
 const $ = (id) => document.getElementById(id);
 
@@ -20,13 +21,16 @@ export function initImage() {
   fileInput.addEventListener('change', (e) => {
     const files = Array.from(e.target.files || []);
     if (!files.length) return;
-    const imgs = files.map((f) => ({
-      id: 'img_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8),
-      name: f.name,
-      size: f.size,
-      file: f,
-      url: URL.createObjectURL(f)
-    }));
+    const exist = new Set((store.get('localImages') || []).map((x) => (x.path || x.name) + '|' + (x.size || 0)));
+    const imgs = [];
+    files.forEach((f) => {
+      if (exist.has(f.name + '|' + f.size)) return;
+      exist.add(f.name + '|' + f.size);
+      imgs.push({
+        id: 'img_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8),
+        origin: 'file', name: f.name, size: f.size, file: f, url: URL.createObjectURL(f)
+      });
+    });
     store.set('localImages', [...store.get('localImages'), ...imgs]);
     renderImageGrid();
     e.target.value = '';
@@ -47,6 +51,11 @@ export function initImage() {
     else if (e.key === '+' || e.key === '=') setZoom(viewerZoom + 0.25);
     else if (e.key === '-') setZoom(viewerZoom - 0.25);
   });
+
+  // 文件夹扫描 / 下载归库增量刷新
+  eventBus.on('library:changed', ({ kind }) => { if (kind === 'image') renderImageGrid(); });
+  document.addEventListener('view:image', renderImageGrid);
+  renderImageGrid();
 }
 
 export function renderImageGrid() {

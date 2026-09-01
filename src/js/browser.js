@@ -4,6 +4,7 @@
  * 无痕模式开关、下载状态提示、与主进程 BrowserView 联动。
  */
 import { toast } from './ui.js';
+import { addDownloadToLibrary } from './mediaLib.js';
 
 const $ = (id) => document.getElementById(id);
 
@@ -60,10 +61,13 @@ export function initBrowser() {
       } else if (data.type === 'download:start') {
         toast({ message: '开始下载：' + data.filename });
       } else if (data.type === 'download:done') {
-        toast({
-          message: data.state === 'completed' ? '下载完成：' + data.filename : '下载已取消',
-          type: data.state === 'completed' ? 'success' : 'error'
-        });
+        if (data.state === 'completed') {
+          toast({ message: '下载完成：' + data.filename, type: 'success' });
+          // 下载完成自动归入对应本地库（音乐/视频/书籍）
+          if (data.savePath) addDownloadToLibrary(data.savePath);
+        } else {
+          toast({ message: '下载已取消', type: 'error' });
+        }
       } else if (data.type === 'closed') {
         setActive(false);
       } else if (data.type === 'ready') {

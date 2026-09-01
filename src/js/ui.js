@@ -100,6 +100,10 @@ export function initKeyboardShortcuts() {
   document.addEventListener('keydown', (e) => {
     // 输入框内不拦截
     if (isTypingTarget(document.activeElement)) return;
+    // 视频 / 书籍全屏浮层打开时，由其内部快捷键处理，避免误控音乐
+    const vp = document.getElementById('videoPlayerOverlay');
+    const br = document.getElementById('bookReader');
+    if ((vp && vp.style.display !== 'none') || (br && br.style.display !== 'none')) return;
     // 弹窗打开时只响应 Esc
     const modalOpen = $('loginModal').classList.contains('show');
     if (modalOpen) {

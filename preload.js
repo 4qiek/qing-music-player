@@ -63,5 +63,17 @@ contextBridge.exposeInMainWorld('qingAPI', {
     const listener = (_e, data) => cb(data);
     ipcRenderer.on('browser:event', listener);
     return () => ipcRenderer.removeListener('browser:event', listener);
+  },
+  // ===== 本地媒体库（文件夹扫描 / 本地文件读取 / ID3） =====
+  pickMediaFolder: () => ipcRenderer.invoke('dialog:pickMediaFolder'),
+  fsReadText: (fp) => ipcRenderer.invoke('fs:readText', fp),
+  fsReadBuffer: (fp) => ipcRenderer.invoke('fs:readBuffer', fp),
+  metaId3: (fp) => ipcRenderer.invoke('meta:id3', fp),
+  metaId3Buf: (buf, ext) => ipcRenderer.invoke('meta:id3buf', buf, ext),
+  mediaUrlForPath: (fp) => ipcRenderer.invoke('media:urlForPath', fp),
+  onMediaFolderNew: (cb) => {
+    const listener = (_e, data) => cb(data);
+    ipcRenderer.on('media:folder-new', listener);
+    return () => ipcRenderer.removeListener('media:folder-new', listener);
   }
 });

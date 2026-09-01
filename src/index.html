@@ -55,6 +55,14 @@
   <symbol id="i-trash" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14M10 11v6M14 11v6"/></symbol>
   <symbol id="i-cloud" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.5 19a4.5 4.5 0 0 0 .5-8.97A6 6 0 0 0 6.34 11 4 4 0 0 0 7 19h10.5z"/><path d="M12 12v6m0 0-2.2-2.2M12 18l2.2-2.2"/></symbol>
   <symbol id="i-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></symbol>
+  <symbol id="i-pip" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><rect x="12" y="11" width="7" height="5" rx="1" fill="currentColor" stroke="none"/></symbol>
+  <symbol id="i-sub" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M7 14h4M13 14h4M7 11h10"/></symbol>
+  <symbol id="i-full" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3M16 3h3a2 2 0 0 1 2 2v3M8 21H5a2 2 0 0 1-2-2v-3M16 21h3a2 2 0 0 0 2-2v-3"/></symbol>
+  <symbol id="i-folder" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-bookmark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></symbol>
+  <symbol id="i-list" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></symbol>
+  <symbol id="i-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></symbol>
 </svg>
 
 <!-- ===== 顶部栏 ===== -->
@@ -131,6 +139,9 @@
       </div>
       <div class="nav-section" id="playlistSection" style="display:none;">我的歌单</div>
       <div id="playlistNav"></div>
+      <button class="nav-item new-playlist-btn" id="newPlaylistBtn" title="新建歌单">
+        <svg><use href="#i-plus"/></svg> 新建歌单
+      </button>
 
       <div class="user-card" id="userCard">
         <button class="login-btn" id="loginBtn">登录网易云账号</button>
@@ -224,6 +235,7 @@
               <div class="sub">导入本地音频文件，支持 MP3 / FLAC / WAV / OGG 等格式；可联网匹配歌手、专辑、封面与歌词</div>
             </div>
             <button class="btn" id="matchAllBtn" title="按歌名自动到网易云匹配歌手、专辑、封面和歌词">☁ 匹配线上信息</button>
+            <button class="btn" id="musicFolderBtn" title="选择一个文件夹，自动扫描其中的音乐/视频/书籍并监听新增"><svg style="width:14px;height:14px;vertical-align:-2px"><use href="#i-folder"/></svg> 添加文件夹</button>
             <button class="btn btn-primary" id="importBtn">+ 导入音乐</button>
             <input type="file" id="fileInput" accept="audio/*" multiple style="display:none;">
           </div>
@@ -283,6 +295,7 @@
           <div class="content-header">
             <div><h2>本地视频</h2><div class="sub">导入本地视频文件（MP4 / WebM 等），点击全屏播放；可联网匹配片名、海报与信息</div></div>
             <button class="btn" id="videoMatchAllBtn" title="按文件名自动匹配影片名、年份、导演主演与海报">☁ 匹配线上信息</button>
+            <button class="btn" id="videoFolderBtn"><svg style="width:14px;height:14px;vertical-align:-2px"><use href="#i-folder"/></svg> 添加文件夹</button>
             <button class="btn btn-primary" id="videoImportBtn">+ 导入视频</button>
             <input type="file" id="videoFileInput" accept="video/*" multiple style="display:none;">
           </div>
@@ -291,6 +304,7 @@
         <div id="view-image" style="display:none;">
           <div class="content-header">
             <div><h2>图片查看</h2><div class="sub">导入本地图片，点击查看原图</div></div>
+            <button class="btn" id="imageFolderBtn"><svg style="width:14px;height:14px;vertical-align:-2px"><use href="#i-folder"/></svg> 添加文件夹</button>
             <button class="btn btn-primary" id="imageImportBtn">+ 导入图片</button>
             <input type="file" id="imageFileInput" accept="image/*" multiple style="display:none;">
           </div>
@@ -300,8 +314,9 @@
           <div class="content-header">
             <div><h2>书籍阅读</h2><div class="sub">导入 TXT / Markdown 文档，点击开始阅读；可联网匹配书名、作者与封面</div></div>
             <button class="btn" id="bookMatchAllBtn" title="按文件名自动匹配书名、作者、年份与封面">☁ 匹配线上信息</button>
+            <button class="btn" id="bookFolderBtn"><svg style="width:14px;height:14px;vertical-align:-2px"><use href="#i-folder"/></svg> 添加文件夹</button>
             <button class="btn btn-primary" id="bookImportBtn">+ 导入书籍</button>
-            <input type="file" id="bookFileInput" accept=".txt,.md,.markdown,.text" multiple style="display:none;">
+            <input type="file" id="bookFileInput" accept=".txt,.md,.markdown,.text,.epub" multiple style="display:none;">
           </div>
           <div class="song-list" id="bookList"></div>
         </div>
@@ -460,9 +475,59 @@
 <div class="video-player" id="videoPlayerOverlay" role="dialog" aria-label="视频播放器" style="display:none;">
   <div class="vp-topbar">
     <span class="vp-title" id="videoPlayerTitle">视频</span>
-    <button class="vp-close" id="videoPlayerClose" title="关闭 (Esc)" aria-label="关闭视频"><svg><use href="#i-close"/></svg></button>
+    <span class="vp-ep-label" id="vpEpisodeLabel"></span>
+    <div class="vp-top-tools">
+      <button class="vp-icon-btn" id="vpPip" title="画中画 (P)" aria-label="画中画"><svg><use href="#i-pip"/></svg></button>
+      <button class="vp-icon-btn" id="videoPlayerClose" title="关闭 (Esc)" aria-label="关闭视频"><svg><use href="#i-close"/></svg></button>
+    </div>
   </div>
-  <video id="videoPlayer" controls playsinline preload="metadata"></video>
+  <div class="vp-stage" id="vpStage">
+    <video id="videoPlayer" playsinline preload="metadata"></video>
+    <div class="vp-subtitle" id="vpSubtitle" style="display:none;"></div>
+    <button class="vp-bigplay" id="vpBigPlay" aria-label="播放暂停"><svg id="vpBigPlayIcon"><use href="#i-play"/></svg></button>
+    <div class="vp-resume-tip" id="vpResumeTip" style="display:none;"></div>
+  </div>
+  <div class="vp-controls" id="vpControls">
+    <div class="vp-seekrow">
+      <span class="vp-time" id="vpCur">00:00</span>
+      <div class="vp-progress" id="vpProgress" role="slider" aria-label="播放进度" tabindex="0">
+        <div class="vp-buffered" id="vpBuffered"></div>
+        <div class="vp-played" id="vpPlayed"></div>
+        <div class="vp-thumb" id="vpThumb"></div>
+        <div class="vp-seek-tip" id="vpSeekTip">00:00</div>
+      </div>
+      <span class="vp-time" id="vpDur">00:00</span>
+    </div>
+    <div class="vp-btnrow">
+      <button class="vp-icon-btn" id="vpPrev" title="上一集 (Ctrl+←)" aria-label="上一集"><svg><use href="#i-prev"/></svg></button>
+      <button class="vp-icon-btn vp-mainplay" id="vpPlay" title="播放/暂停 (空格)" aria-label="播放暂停"><svg id="vpPlayIcon"><use href="#i-play"/></svg></button>
+      <button class="vp-icon-btn" id="vpNext" title="下一集 (Ctrl+→)" aria-label="下一集"><svg><use href="#i-next"/></svg></button>
+      <button class="vp-text-btn" id="vpBack10" title="后退 10 秒 (J)">-10s</button>
+      <button class="vp-text-btn" id="vpFwd10" title="前进 10 秒 (L)">+10s</button>
+      <div class="vp-vol">
+        <button class="vp-icon-btn" id="vpMute" title="静音 (M)" aria-label="静音"><svg id="vpVolIcon"><use href="#i-volume"/></svg></button>
+        <input type="range" class="vp-vol-range" id="vpVolume" min="0" max="100" value="100" aria-label="音量">
+      </div>
+      <div class="vp-speed-wrap">
+        <button class="vp-text-btn" id="vpSpeed" title="播放速度">1.0x</button>
+        <div class="vp-speed-menu" id="vpSpeedMenu" style="display:none;">
+          <span data-speed="0.5">0.5x</span><span data-speed="0.75">0.75x</span>
+          <span data-speed="1" class="on">1.0x</span><span data-speed="1.25">1.25x</span>
+          <span data-speed="1.5">1.5x</span><span data-speed="2">2.0x</span>
+        </div>
+      </div>
+      <button class="vp-text-btn" id="vpSubLoad" title="加载外挂字幕 (.srt/.vtt)">字幕</button>
+      <div class="vp-sub-shift" id="vpSubShiftBox" style="display:none;">
+        <button class="vp-text-btn" id="vpSubMinus" title="字幕提前 0.5s">-0.5</button>
+        <span id="vpSubShiftVal">0s</span>
+        <button class="vp-text-btn" id="vpSubPlus" title="字幕延后 0.5s">+0.5</button>
+        <button class="vp-text-btn" id="vpSubSize" title="切换字幕字号">字号</button>
+      </div>
+      <span class="vp-spacer"></span>
+      <button class="vp-icon-btn" id="vpFull" title="全屏 (F)" aria-label="全屏"><svg><use href="#i-full"/></svg></button>
+    </div>
+  </div>
+  <input type="file" id="vpSubFile" accept=".srt,.vtt" hidden>
 </div>
 
 <!-- ===== 全屏图片查看器 ===== -->
@@ -485,16 +550,33 @@
 <div class="book-reader" id="bookReader" role="dialog" aria-label="书籍阅读器" style="display:none;">
   <div class="br-topbar">
     <span class="vp-title" id="bookReaderTitle">书籍</span>
-    <div class="iv-tools">
-      <button class="vp-close" id="bookFontDown" title="减小字号" aria-label="减小字号"><svg><use href="#i-font"/></svg></button>
-      <span class="br-fontsize" id="bookFontSize">16px</span>
-      <button class="vp-close" id="bookFontUp" title="增大字号" aria-label="增大字号"><svg><use href="#i-font"/></svg></button>
+    <span class="br-chapter-title" id="brChapterTitle"></span>
+    <div class="iv-tools br-tools">
+      <button class="vp-close" id="brTocBtn" title="目录" aria-label="目录"><svg><use href="#i-list"/></svg></button>
+      <button class="vp-close" id="brMarkBtn" title="添加/查看书签" aria-label="书签"><svg><use href="#i-bookmark"/></svg></button>
+      <button class="vp-close" id="brPrevCh" title="上一章" aria-label="上一章"><svg><use href="#i-back"/></svg></button>
+      <button class="vp-close" id="brNextCh" title="下一章" aria-label="下一章"><svg><use href="#i-fwd"/></svg></button>
+      <button class="vp-close br-text-btn" id="bookFontDown" title="减小字号" aria-label="减小字号">A-</button>
+      <span class="br-fontsize" id="bookFontSize">18</span>
+      <button class="vp-close br-text-btn" id="bookFontUp" title="增大字号" aria-label="增大字号">A+</button>
+      <button class="vp-close br-text-btn" id="brLineBtn" title="切换行距">行距</button>
+      <button class="vp-close br-text-btn" id="brBgBtn" title="切换护眼底色">底色</button>
       <button class="vp-close" id="bookReaderClose" title="关闭 (Esc)" aria-label="关闭"><svg><use href="#i-close"/></svg></button>
     </div>
   </div>
-  <div class="br-content" id="bookContent"></div>
+  <div class="br-body">
+    <div class="br-content" id="bookContent" data-bg="paper"></div>
+    <aside class="br-drawer" id="brDrawer" style="display:none;">
+      <div class="br-drawer-tabs">
+        <button class="on" data-tab="toc">目录</button>
+        <button data-tab="mark">书签</button>
+      </div>
+      <div class="br-drawer-list" id="brDrawerList"></div>
+    </aside>
+  </div>
 </div>
 
+<script src="./vendor/jszip.min.js"></script>
 <script type="module" src="./js/app.js"></script>
 </body>
 </html>

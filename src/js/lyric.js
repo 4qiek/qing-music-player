@@ -65,6 +65,21 @@ export async function loadLyric(track, lyricEl) {
     }
   }
 
+  // 本地曲目：在线歌词缺失时回退到音频内嵌歌词（ID3 USLT/LYRICS）
+  if (lyricData.length === 0 && track.platform === 'local' && track.embeddedLyric) {
+    const parsed = parseLRC(track.embeddedLyric);
+    if (parsed.length) {
+      lyricData = parsed;
+    } else {
+      // 无时间轴的纯文本：静态展示
+      store.set('lyricData', []);
+      const safe = String(track.embeddedLyric).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br>');
+      lyricEl.innerHTML = `<div class="lyric-line static-lyric">${safe}</div>`;
+      lyricEl.style.transform = 'translateY(0)';
+      return;
+    }
+  }
+
   store.set('lyricData', lyricData);
 
   if (lyricData.length === 0) {

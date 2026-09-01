@@ -33,10 +33,16 @@ import { initBrowser } from './browser.js';
 import { initAppSwitch } from './appSwitch.js';
 import { initImage } from './image.js';
 import { initBook } from './book.js';
+import { initMediaLib, scanMediaFolder } from './mediaLib.js';
+import { initPersistence, restoreState } from './persistence.js';
+import { initPlaylists } from './playlists.js';
+import { initCommander } from './commander.js';
 
 export { switchView };
 
 export function initApp() {
+  // 0. 恢复持久化状态（音量 / 播放模式 / EQ / 路径型媒体库）
+  restoreState();
   // 1. 基础设施
   initGlobalErrorHandler();
   initTheme();
@@ -73,6 +79,11 @@ export function initApp() {
   initAppSwitch();
   initImage();
   initBook();
+  initMediaLib();
+  initPlaylists();
+  initCommander();
+  initPersistence();
+  bindFolderButtons();
 
   // 播放模式切换
   const modeBtn = document.getElementById('playModeBtn');
@@ -135,7 +146,16 @@ export function initApp() {
   initQualityMenu();
 
   // 启动就绪
-  console.log('[app] 清·音乐播放器 初始化完成');
+  console.log('[app] 清 初始化完成');
+}
+
+/** 各视图「添加文件夹」按钮统一走媒体库扫描（一次扫描全部类型） */
+function bindFolderButtons() {
+  const ids = ['musicFolderBtn', 'videoFolderBtn', 'imageFolderBtn', 'bookFolderBtn'];
+  ids.forEach((id) => {
+    const btn = document.getElementById(id);
+    if (btn) btn.addEventListener('click', () => { scanMediaFolder(); });
+  });
 }
 
 function initQualityMenu() {

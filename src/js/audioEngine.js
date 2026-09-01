@@ -30,6 +30,52 @@ const eqFilters = [];
 let tapeNodes = {};
 let usbCheckTimer = null;
 let analyserNode = null;
+let masterComp = null;   // 响度均衡压缩器
+let masterGain = null;   // 主增益（淡入淡出）
+
+/**
+ * 主输出总线：analyser → 压缩器(响度均衡) → 主增益 → destination
+ * 压缩器温和压平动态，避免不同音源忽大忽小；主增益用于切歌淡入。
+ */
+function ensureMasterBus() {
+  if (!audioCtx) return null;
+  if (!masterComp) {
+    masterComp = audioCtx.createDynamicsCompressor();
+    masterComp.threshold.value = -18;
+    masterComp.knee.value = 20;
+    masterComp.ratio.value = 3;
+    masterComp.attack.value = 0.004;
+    masterComp.release.value = 0.25;
+    masterGain = audioCtx.createGain();
+    masterGain.gain.value = 1;
+    masterComp.connect(masterGain);
+    masterGain.connect(audioCtx.destination);
+  }
+  return masterComp;
+}
+
+/** 切歌淡入：主增益 0 → 1 */
+export function fadeIn(duration = 0.45) {
+  if (!audioCtx || !masterGain) return;
+  const now = audioCtx.currentTime;
+  masterGain.gain.cancelScheduledValues(now);
+  masterGain.gain.setValueAtTime(0.0001, now);
+  masterGain.gain.exponentialRampToValueAtTime(1, now + duration);
+}
+
+/** 淡出（暂停/切出可选） */
+export function fadeOut(duration = 0.25) {
+  if (!audioCtx || !masterGain) return;
+  const now = audioCtx.currentTime;
+  masterGain.gain.cancelScheduledValues(now);
+  masterGain.gain.setValueAtTime(masterGain.gain.value, now);
+  masterGain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
+}
+
+/** 开关响度均衡 */
+export function setLoudness(on) {
+  if (masterComp) masterComp.ratio.value = on ? 3 : 1;
+}
 
 /**
  * 频谱分析器（懒创建，供可视化使用）
@@ -69,12 +115,12 @@ export function initAudioCtx(audio) {
     prev = eq;
   });
   prev.connect(audioCtx.destination);
-  // 频谱分析器挂在 EQ 链末端（不改变信号）
+  // 频谱分析器挂在 EQ 链末端（不改变信号），再进入主总线
   const an = ensureAnalyser();
   if (an) {
     try { prev.disconnect(audioCtx.destination); } catch (e) { /* ignore */ }
     prev.connect(an);
-    an.connect(audioCtx.destination);
+    an.connect(ensureMasterBus());
   }
   return audioCtx;
 }
@@ -185,8 +231,8 @@ function connectTapeChain() {
   let prev = tapeNodes.delay;
   eqFilters.forEach((eq) => { prev.connect(eq); prev = eq; });
   const an = ensureAnalyser();
-  if (an) { prev.connect(an); an.connect(audioCtx.destination); }
-  else prev.connect(audioCtx.destination);
+  if (an) { prev.connect(an); an.connect(ensureMasterBus()); }
+  else prev.connect(ensureMasterBus() || audioCtx.destination);
 }
 
 function disconnectTapeChain() {
@@ -195,8 +241,8 @@ function disconnectTapeChain() {
   let prev = sourceNode;
   eqFilters.forEach((eq) => { prev.connect(eq); prev = eq; });
   const an = ensureAnalyser();
-  if (an) { prev.connect(an); an.connect(audioCtx.destination); }
-  else prev.connect(audioCtx.destination);
+  if (an) { prev.connect(an); an.connect(ensureMasterBus()); }
+  else prev.connect(ensureMasterBus() || audioCtx.destination);
 }
 
 export function enableTapeEffect(audio) {
@@ -257,6 +303,9 @@ export default {
   setEqGain,
   resetEqGains,
   resumeAudioCtx,
+  fadeIn,
+  fadeOut,
+  setLoudness,
   enableTapeEffect,
   disableTapeEffect,
   toggleTapeEffect,

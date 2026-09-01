@@ -183,6 +183,11 @@ const $ = (id) => document.getElementById(id);
 
 // ===== 基础播放 =====
 export async function playTrack(track) {
+  // 本地曲目显示匹配到的歌名（无则去掉扩展名）
+  if (track && track.platform === 'local') {
+    const cleanName = track.matchedName || String(track.name || '').replace(/\.[^.]+$/, '');
+    if (cleanName && cleanName !== track.name) track = { ...track, name: cleanName };
+  }
   audioEngine.initAudioCtx(audio);
   audioEngine.resumeAudioCtx();
 
@@ -207,6 +212,7 @@ export async function playTrack(track) {
   updateDetailPage(track);
   updateMainPanel(track);
   triggerFadeIn();
+  audioEngine.fadeIn(0.45);
   loadLyric(track, $('lyricPanel'));
 }
 
@@ -394,6 +400,16 @@ export function playLocal(idx) {
   playTrack(t);
 }
 
+/** 统一队列播放入口：按 currentQueue 索引播放（自动区分本地/在线，支持歌单混排） */
+export function playQueueIndex(idx) {
+  const queue = store.get('currentQueue') || [];
+  if (idx < 0 || idx >= queue.length) return;
+  store.set('currentIndex', idx);
+  const t = queue[idx];
+  if (t.platform === 'local') playTrack(t);
+  else playOnlineFromQueue(idx);
+}
+
 // ===== 进度更新（rAF 批量驱动） =====
 let rafId = null;
 
@@ -447,7 +463,8 @@ export async function switchQuality(level) {
 
 // ===== 音频元素事件绑定 =====
 export function initAudioEvents() {
-  audio.volume = 0.8;
+  const savedVol = store.get('volume');
+  audio.volume = (typeof savedVol === 'number') ? savedVol : 0.8;
 
   audio.addEventListener('loadedmetadata', () => {
     $('mainTotTime').textContent = formatTime(audio.duration);
