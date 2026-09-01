@@ -2048,3 +2048,60 @@ body.mini-mode .np-controls { gap: 6px; }
 ::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 999px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--text-3); }
 ::-webkit-scrollbar-track { background: transparent; }
+
+/* ===== 登录弹窗 tab + 扫码登录 ===== */
+.login-tabs {
+  display: flex;
+  gap: 0;
+  margin: 12px 0 16px;
+  border-bottom: 1px solid var(--border, #e5e5ea);
+}
+.login-tab {
+  flex: 1;
+  padding: 10px 0;
+  background: none;
+  border: none;
+  font-size: 14px;
+  color: var(--text-secondary, #8e8e93);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: color .15s, border-color .15s;
+}
+.login-tab:hover { color: var(--text-color, #1c1c1e); }
+.login-tab.active {
+  color: var(--accent, #1c1c1e);
+  border-bottom-color: var(--accent, #1c1c1e);
+  font-weight: 600;
+}
+.qr-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 8px 0 4px;
+}
+.qr-box img {
+  width: 200px;
+  height: 200px;
+  border-radius: 10px;
+  border: 1px solid var(--border, #e5e5ea);
+  background: #fff;
+  padding: 8px;
+}
+.qr-loading {
+  width: 200px;
+  height: 200px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  border: 1px dashed var(--border, #c7c7cc);
+  color: var(--text-secondary, #8e8e93);
+  font-size: 13px;
+}
+.qr-status {
+  margin-top: 14px;
+  font-size: 13px;
+  color: var(--text-secondary, #8e8e93);
+  text-align: center;
+  min-height: 20px;
+}

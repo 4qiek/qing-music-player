@@ -7,6 +7,10 @@ contextBridge.exposeInMainWorld('qingAPI', {
   neteaseDetail: (ids) => ipcRenderer.invoke('netease:detail', ids),
   neteaseLyric: (id) => ipcRenderer.invoke('netease:lyric', id),
   neteaseLogin: (data) => ipcRenderer.invoke('netease:login', data),
+  neteaseQrKey: () => ipcRenderer.invoke('netease:qrKey'),
+  neteaseQrCreate: (key) => ipcRenderer.invoke('netease:qrCreate', key),
+  neteaseQrCheck: (key) => ipcRenderer.invoke('netease:qrCheck', key),
+  neteaseLoginStatus: (cookie) => ipcRenderer.invoke('netease:loginStatus', cookie),
   neteasePlaylist: (uid) => ipcRenderer.invoke('netease:playlist', uid),
   neteasePlaylistDetail: (id) => ipcRenderer.invoke('netease:playlistDetail', id),
   // 发现页

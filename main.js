@@ -5,6 +5,7 @@ const http = require('http');
 
 // 网易云音乐API
 const netease = require('NeteaseCloudMusicApi');
+let neteaseCookie = '';
 const mainMedia = require('./main-media');
 
 let mainWindow = null;
@@ -86,7 +87,7 @@ ipcMain.handle('netease:search', async (e, keyword) => {
 });
 ipcMain.handle('netease:url', async (e, { id, level }) => {
   try {
-    const res = await netease.song_url_v1({ id, level: level || 'standard' });
+    const res = await netease.song_url_v1({ id, level: level || 'standard', cookie: neteaseCookie });
     const url = res.body?.data?.[0]?.url;
     const br = res.body?.data?.[0]?.br;
     return url ? { url, br } : { error: '无法获取播放地址（可能需要更高音质权限）' };
@@ -198,7 +199,7 @@ ipcMain.handle('netease:login', async (e, { phone, password }) => {
 
 ipcMain.handle('netease:playlist', async (e, uid) => {
   try {
-    const res = await netease.user_playlist({ uid, limit: 50 });
+    const res = await netease.user_playlist({ uid, limit: 50, cookie: neteaseCookie });
     const playlists = res.body?.playlist || [];
     return playlists.map(p => ({
       id: p.id,
@@ -213,7 +214,7 @@ ipcMain.handle('netease:playlist', async (e, uid) => {
 
 ipcMain.handle('netease:playlistDetail', async (e, id) => {
   try {
-    const res = await netease.playlist_track({ id, limit: 50 });
+    const res = await netease.playlist_track({ id, limit: 50, cookie: neteaseCookie });
     const tracks = res.body?.songs || [];
     return tracks.map(s => ({
       id: s.id,

@@ -84,6 +84,19 @@ export const apiClient = {
     return withRetry(() => api.neteaseLogin(data), { maxRetries: 1 });
   },
 
+  neteaseQrKey() {
+    return withRetry(() => api.neteaseQrKey(), { maxRetries: 2 });
+  },
+  neteaseQrCreate(key) {
+    return withRetry(() => api.neteaseQrCreate(key), { maxRetries: 2 });
+  },
+  neteaseQrCheck(key) {
+    return api.neteaseQrCheck(key);
+  },
+  neteaseLoginStatus(cookie) {
+    return withRetry(() => api.neteaseLoginStatus(cookie), { maxRetries: 1 });
+  },
+
   neteasePlaylist(uid, opts = {}) {
     const key = `cache:netease:playlist:${uid}`;
     return cachedRequest(key, () => api.neteasePlaylist(uid), 'playlist', opts);
