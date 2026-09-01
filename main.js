@@ -247,7 +247,9 @@ ipcMain.handle('kugou:search', async (e, keyword) => {
       artist: s.SingerName,
       album: s.AlbumName || '',
       albumId: s.AlbumID || '',
-      cover: s.Img || (s.AlbumID ? `https://albumcover.kugou.com/albumcover/${s.AlbumID}.jpg` : ''),
+      // 酷狗搜索返回的封面字段是 Image（模板带 {size} 占位），不是 Img
+      cover: (s.Image ? s.Image.replace('{size}', '400').replace(/^http:/, 'https:') : '')
+        || (s.AlbumID ? `https://albumcover.kugou.com/albumcover/${s.AlbumID}.jpg` : ''),
       duration: s.Duration,
       platform: 'kugou'
     }));
