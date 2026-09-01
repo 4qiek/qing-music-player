@@ -57,6 +57,19 @@ function activateApp(app, view) {
   }
   // 音乐子导航显隐
   $('musicNav').style.display = app === 'music' ? '' : 'none';
+
+  // 音乐专属 UI 只在音乐应用显示：
+  // 顶部搜索框 / 平台标签 / 天气卡片 / 左侧播放面板
+  const musicOnly = app === 'music';
+  document.querySelectorAll('.search-box, .platform-tabs, .weather-widget').forEach((el) => {
+    el.style.display = musicOnly ? '' : 'none';
+  });
+  const panelLeft = document.querySelector('.panel-left');
+  if (panelLeft) panelLeft.style.display = musicOnly ? '' : 'none';
+  // 非音乐界面工作区变单列，避免左侧空档
+  const ws = document.querySelector('.workspace');
+  if (ws) ws.style.gridTemplateColumns = musicOnly ? '' : '1fr';
+
   // 切换到目标视图
   if (app !== 'browser' && view) {
     const current = store.get('view');
