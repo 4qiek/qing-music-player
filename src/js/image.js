@@ -64,11 +64,29 @@ export function renderImageGrid() {
   grid.innerHTML = imgs.map((img, i) => `
     <div class="img-cell" data-idx="${i}" title="${escapeName(img.name)}">
       <img src="${img.url}" alt="${escapeName(img.name)}" loading="lazy">
+      <button class="img-del" data-del="${i}" title="移除图片" aria-label="移除图片"><svg><use href="#i-trash"/></svg></button>
       <div class="img-name">${escapeName(img.name)}</div>
     </div>`).join('');
   grid.querySelectorAll('.img-cell').forEach((cell) =>
     cell.addEventListener('click', () => openViewer(+cell.dataset.idx))
   );
+  grid.querySelectorAll('.img-del').forEach((btn) =>
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      removeImage(+btn.dataset.del);
+    })
+  );
+}
+
+/** 从图片列表移除指定项 */
+export function removeImage(idx) {
+  const imgs = store.get('localImages');
+  if (idx < 0 || idx >= imgs.length) return;
+  const img = imgs[idx];
+  try { if (img.url && img.url.startsWith('blob:')) URL.revokeObjectURL(img.url); } catch (e) {}
+  imgs.splice(idx, 1);
+  store.set('localImages', imgs);
+  renderImageGrid();
 }
 
 /** 打开全屏查看 */
@@ -111,4 +129,4 @@ export function closeViewer() {
   $('imageViewerImg').removeAttribute('src');
 }
 
-export default { initImage, renderImageGrid, openViewer, closeViewer };
+export default { initImage, renderImageGrid, openViewer, closeViewer, removeImage };

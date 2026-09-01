@@ -64,13 +64,30 @@ export function renderVideoList() {
       <span class="s-name">${escapeName(v.name)}</span>
       <span class="s-artist">${escapeName(v.ext)}</span>
       <span class="s-dur">${formatSize(v.size)}</span>
-      <span class="s-platform">本地</span>
+      <span class="s-platform">本地<button class="row-del" data-del="${i}" title="从列表中移除" aria-label="移除"><svg><use href="#i-trash"/></svg></button></span>
     </div>`;
   });
   el.innerHTML = html;
   el.querySelectorAll('.song-row').forEach((row) =>
     row.addEventListener('click', () => openVideo(+row.dataset.idx))
   );
+  el.querySelectorAll('.row-del').forEach((btn) =>
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      removeVideo(+btn.dataset.del);
+    })
+  );
+}
+
+/** 从视频列表移除指定项 */
+export function removeVideo(idx) {
+  const videos = store.get('localVideos');
+  if (idx < 0 || idx >= videos.length) return;
+  const v = videos[idx];
+  try { if (v.url && v.url.startsWith('blob:')) URL.revokeObjectURL(v.url); } catch (e) {}
+  videos.splice(idx, 1);
+  store.set('localVideos', videos);
+  renderVideoList();
 }
 
 /** 打开全屏视频播放 */
@@ -93,4 +110,4 @@ export function closeVideo() {
   $('videoPlayerOverlay').style.display = 'none';
 }
 
-export default { initVideo, renderVideoList, openVideo, closeVideo };
+export default { initVideo, renderVideoList, openVideo, closeVideo, removeVideo };

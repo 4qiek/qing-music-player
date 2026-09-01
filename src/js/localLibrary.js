@@ -54,17 +54,34 @@ export function renderLocalList() {
       <span class="s-name">${escapeName(t.name)}</span>
       <span class="s-artist">${escapeName(t.artist)}</span>
       <span class="s-dur">--:--</span>
-      <span class="s-platform">本地</span>
+      <span class="s-platform">本地<button class="row-del" data-del="${i}" title="从列表中移除" aria-label="移除"><svg><use href="#i-trash"/></svg></button></span>
     </div>`;
   });
   el.innerHTML = html;
   el.querySelectorAll('.song-row').forEach((row) =>
     row.addEventListener('click', () => playLocal(+row.dataset.idx))
   );
+  el.querySelectorAll('.row-del').forEach((btn) =>
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      removeLocal(+btn.dataset.del);
+    })
+  );
+}
+
+/** 从本地列表移除指定项 */
+export function removeLocal(idx) {
+  const tracks = store.get('localTracks');
+  if (idx < 0 || idx >= tracks.length) return;
+  const t = tracks[idx];
+  try { if (t.url && t.url.startsWith('blob:')) URL.revokeObjectURL(t.url); } catch (e) {}
+  tracks.splice(idx, 1);
+  store.set('localTracks', tracks);
+  renderLocalList();
 }
 
 function escapeName(str) {
   return String(str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
-export default { initLocalLibrary, renderLocalList, PLATFORM_LABEL };
+export default { initLocalLibrary, renderLocalList, removeLocal, PLATFORM_LABEL };

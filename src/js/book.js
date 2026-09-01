@@ -64,13 +64,28 @@ export function renderBookList() {
       <span class="s-name">${escapeName(b.name)}</span>
       <span class="s-artist">${escapeName(b.ext)}</span>
       <span class="s-dur">${formatSize(b.size)}</span>
-      <span class="s-platform">本地</span>
+      <span class="s-platform">本地<button class="row-del" data-del="${i}" title="从列表中移除" aria-label="移除"><svg><use href="#i-trash"/></svg></button></span>
     </div>`;
   });
   el.innerHTML = html;
   el.querySelectorAll('.song-row').forEach((row) =>
     row.addEventListener('click', () => openReader(+row.dataset.idx))
   );
+  el.querySelectorAll('.row-del').forEach((btn) =>
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      removeBook(+btn.dataset.del);
+    })
+  );
+}
+
+/** 从书籍列表移除指定项 */
+export function removeBook(idx) {
+  const books = store.get('localBooks');
+  if (idx < 0 || idx >= books.length) return;
+  books.splice(idx, 1);
+  store.set('localBooks', books);
+  renderBookList();
 }
 
 function formatSize(bytes) {
@@ -123,4 +138,4 @@ export function closeReader() {
   $('bookContent').innerHTML = '';
 }
 
-export default { initBook, renderBookList, openReader, closeReader };
+export default { initBook, renderBookList, openReader, closeReader, removeBook };

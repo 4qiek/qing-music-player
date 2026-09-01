@@ -934,6 +934,13 @@ function ensureBrowserView() {
     }
   });
   const wc = browserView.webContents;
+  // 拦截 target=_blank / window.open：不新开窗口，在当前浏览器内打开
+  wc.setWindowOpenHandler(({ url }) => {
+    if (/^https?:\/\//i.test(url)) {
+      wc.loadURL(url);
+    }
+    return { action: 'deny' };
+  });
   wc.on('did-navigate', (_e, url) => sendBrowserEvent({ type: 'nav', url }));
   wc.on('did-navigate-in-page', (_e, url) => sendBrowserEvent({ type: 'nav', url }));
   wc.on('page-title-updated', (_e, title) => sendBrowserEvent({ type: 'title', title }));

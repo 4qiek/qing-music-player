@@ -1695,3 +1695,46 @@ body.mini-mode .np-controls { gap: 6px; }
   color: var(--text);
 }
 .br-content p { margin: 0 0 16px; }
+
+
+/* ============================================================
+   媒体移除按钮
+   ============================================================ */
+.row-del {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-3);
+  padding: 5px;
+  margin-left: 6px;
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  vertical-align: middle;
+  transition: color .15s, background .15s;
+}
+.row-del:hover { color: var(--error); background: var(--hover); }
+.row-del svg { width: 15px; height: 15px; }
+
+.img-cell .img-del {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.5);
+  color: #fff;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity .15s, background .15s;
+  z-index: 2;
+}
+.img-cell:hover .img-del { opacity: 1; }
+.img-cell .img-del:hover { background: rgba(220, 60, 60, 0.9); }
+.img-del svg { width: 14px; height: 14px; }
