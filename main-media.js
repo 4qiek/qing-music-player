@@ -53,16 +53,25 @@ function toMediaUrl(absPath) {
   return 'qing-file://media/' + encodeURIComponent(absPath.replace(/\\/g, '/'));
 }
 
-/** 递归枚举目录下的媒体文件（跳过隐藏 / 节点目录，限制总量防爆） */
-function walkMedia(dir, out, cap, depth) {
+/** 递归枚举目录下的媒体文件（跳过隐藏 / 节点目录 / 符号链接循环，限制总量防爆） */
+function walkMedia(dir, out, cap, depth, visited) {
   if (out.length >= cap || depth > 12) return;
+  if (!visited) visited = new Set();
+  let realDir;
+  try { realDir = fs.realpathSync(dir); } catch (e) { return; }
+  if (visited.has(realDir)) return;
+  visited.add(realDir);
   let entries = [];
   try { entries = fs.readdirSync(dir, { withFileTypes: true }); } catch (e) { return; }
   for (const ent of entries) {
     if (out.length >= cap) break;
     if (ent.name.startsWith('.') || ent.name === 'node_modules' || ent.name === '$RECYCLE.BIN' || ent.name === 'System Volume Information') continue;
     const full = path.join(dir, ent.name);
-    if (ent.isDirectory()) walkMedia(full, out, cap, depth + 1);
+    if (ent.isDirectory()) {
+      // 跳过符号链接目录，防止循环
+      try { if (fs.lstatSync(full).isSymbolicLink()) continue; } catch (e) { continue; }
+      walkMedia(full, out, cap, depth + 1, visited);
+    }
     else {
       const kind = kindOf(full);
       if (kind) {

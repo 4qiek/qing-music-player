@@ -6,6 +6,22 @@ import { store } from './store.js';
 import { apiClient } from './apiClient.js';
 import { formatTime } from './utils.js';
 
+/** 歌词解析结果缓存（key: 歌曲id+类型，避免同一首歌反复解析） */
+const lyricCache = new Map();
+const LYRIC_CACHE_MAX = 200;
+
+function cachedParseLRC(key, text) {
+  if (!text) return [];
+  if (lyricCache.has(key)) return lyricCache.get(key);
+  const parsed = parseLRC(text);
+  if (lyricCache.size >= LYRIC_CACHE_MAX) {
+    const firstKey = lyricCache.keys().next().value;
+    lyricCache.delete(firstKey);
+  }
+  lyricCache.set(key, parsed);
+  return parsed;
+}
+
 /**
  * 解析 LRC 文本
  * @param {string} lrcText
@@ -50,10 +66,10 @@ export async function loadLyric(track, lyricEl) {
     try {
       const res = await apiClient.neteaseLyric(lyricId);
       if (res && res.lrc) {
-        lyricData = parseLRC(res.lrc);
+        lyricData = cachedParseLRC(lyricId + ':lrc', res.lrc);
         // 翻译歌词合并
         if (res.tlyric) {
-          const trans = parseLRC(res.tlyric);
+          const trans = cachedParseLRC(lyricId + ':tlyric', res.tlyric);
           lyricData.forEach((l) => {
             const t = trans.find((x) => Math.abs(x.time - l.time) < 0.5);
             if (t) l.text += '\n' + t.text;
@@ -67,7 +83,7 @@ export async function loadLyric(track, lyricEl) {
 
   // 本地曲目：在线歌词缺失时回退到音频内嵌歌词（ID3 USLT/LYRICS）
   if (lyricData.length === 0 && track.platform === 'local' && track.embeddedLyric) {
-    const parsed = parseLRC(track.embeddedLyric);
+    const parsed = cachedParseLRC('embed:' + (track.path || track.name || track.id), track.embeddedLyric);
     if (parsed.length) {
       lyricData = parsed;
     } else {

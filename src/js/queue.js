@@ -4,11 +4,9 @@
  */
 import { store } from './store.js';
 import { playOnline, toggleFavorite, isFavorite } from './player.js';
-import { escapeHtml } from './utils.js';
+import { escapeHtml, PLATFORM_LABEL } from './utils.js';
 
 const $ = (id) => document.getElementById(id);
-
-const PLATFORM_LABEL = { netease: '网易', qq: 'QQ', kugou: '酷狗', local: '本地' };
 
 function renderQueue() {
   const list = $('queueList');

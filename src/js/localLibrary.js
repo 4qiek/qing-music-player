@@ -9,13 +9,11 @@ import { store } from './store.js';
 import { playLocal } from './player.js';
 import { apiClient } from './apiClient.js';
 import { eventBus } from './eventBus.js';
-import { sleep } from './utils.js';
+import { sleep, PLATFORM_LABEL } from './utils.js';
 import { bindCoverFallback } from './metaMatch.js';
 import { enrichAudio } from './mediaLib.js';
 
 const $ = (id) => document.getElementById(id);
-
-const PLATFORM_LABEL = { netease: '网易', qq: 'QQ', kugou: '酷狗', local: '本地' };
 
 /** 由文件名构造搜索关键词：去扩展名、音质标签、多余符号 */
 function buildKeyword(name) {

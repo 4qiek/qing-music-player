@@ -7,12 +7,9 @@ import { eventBus } from './eventBus.js';
 import { apiClient } from './apiClient.js';
 import { playOnline } from './player.js';
 import { switchView } from './view.js';
-import { debounce, escapeHtml } from './utils.js';
+import { debounce, escapeHtml, PLATFORM_LABEL, PLATFORM_NAME } from './utils.js';
 
 const $ = (id) => document.getElementById(id);
-
-const PLATFORM_NAME = { netease: '网易云音乐', qq: 'QQ音乐', kugou: '酷狗音乐' };
-const PLATFORM_LABEL = { netease: '网易', qq: 'QQ', kugou: '酷狗', local: '本地' };
 
 let searchSeq = 0; // 防止过期响应覆盖新结果
 

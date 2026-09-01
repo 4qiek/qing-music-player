@@ -8,11 +8,9 @@ import { eventBus } from './eventBus.js';
 import { apiClient } from './apiClient.js';
 import * as audioEngine from './audioEngine.js';
 import { loadLyric, updateLyric } from './lyric.js';
-import { formatTime } from './utils.js';
+import { formatTime, PLATFORM_NAME } from './utils.js';
 
 const audio = document.getElementById('audio');
-const PLATFORM_NAME = { netease: '网易云音乐', qq: 'QQ音乐', kugou: '酷狗音乐', local: '本地音乐' };
-
 // ===== 播放模式 =====
 export function cyclePlayMode() {
   const order = ['list', 'single', 'shuffle', 'smart'];

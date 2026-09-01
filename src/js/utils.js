@@ -2,6 +2,12 @@
  * utils.js — 通用工具函数
  */
 
+/** 平台短标签（用于列表角标） */
+export const PLATFORM_LABEL = { netease: '网易', qq: 'QQ', kugou: '酷狗', local: '本地' };
+
+/** 平台全称（用于标题/提示） */
+export const PLATFORM_NAME = { netease: '网易云音乐', qq: 'QQ音乐', kugou: '酷狗音乐', local: '本地音乐' };
+
 /**
  * 秒 → mm:ss
  * @param {number} s 秒
