@@ -176,42 +176,37 @@
 
 .wp-scene > * { animation: fadeIn 0.6s ease; }
 
-/* 省份地标建筑背景 */
+/* 省份背景大字 */
 .wp-landmarks {
   position: absolute;
   bottom: 0;
   left: 0;
   right: 0;
-  height: 180px;
+  height: 200px;
   display: flex;
   align-items: flex-end;
   justify-content: center;
-  gap: 0;
   pointer-events: none;
-  opacity: 0.12;
+  overflow: hidden;
 }
-.wp-landmarks svg {
-  height: 100%;
-  width: auto;
-  animation: landmarkFloat 6s ease-in-out infinite;
-  stroke: var(--text);
-}
-.wp-landmarks svg:nth-child(2) { animation-delay: -1s; }
-.wp-landmarks svg:nth-child(3) { animation-delay: -2s; }
-.wp-landmarks svg:nth-child(4) { animation-delay: -3s; }
-@keyframes landmarkFloat {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-6px); }
+.province-bg-char {
+  font-size: 220px;
+  font-weight: 700;
+  line-height: 0.8;
+  color: var(--text);
+  opacity: 0.05;
+  letter-spacing: 0;
+  user-select: none;
 }
 .wp-province-label {
   position: absolute;
-  bottom: 12px;
+  bottom: 16px;
   left: 50%;
   transform: translateX(-50%);
-  font-size: 11px;
+  font-size: 12px;
   color: var(--text-2);
-  letter-spacing: 4px;
-  opacity: 0.5;
+  letter-spacing: 6px;
+  opacity: 0.4;
 }
 
 /* ==========================================================================
