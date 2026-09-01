@@ -663,3 +663,215 @@ ipcMain.handle('system:applyEq', async (e, values) => {
     return { error: err.message };
   }
 });
+
+// ============================================================
+// 新增功能模块：发现页(排行榜/推荐/相似歌曲)、桌面歌词、系统托盘、
+// 全局快捷键、迷你模式、开机自启
+// ============================================================
+const { Tray, Menu, globalShortcut } = require('electron');
+
+let lyricWindow = null;
+let tray = null;
+
+// ---------- 网易云歌曲字段映射（兼容新旧字段） ----------
+function mapNeteaseSongs(songs) {
+  return (songs || []).map((s) => ({
+    id: s.id,
+    name: s.name,
+    artist: ((s.artists || []).map((a) => a.name).join(' / ')) || ((s.ar || []).map((a) => a.name).join(' / ')),
+    album: s.album?.name || s.al?.name || '',
+    cover: s.album?.picUrl || s.al?.picUrl || '',
+    duration: (s.duration != null ? s.duration : (s.dt || 0)) / 1000,
+    platform: 'netease'
+  }));
+}
+
+// ---------- 发现页：排行榜 ----------
+ipcMain.handle('netease:toplist', async () => {
+  try {
+    const res = await netease.toplist();
+    const list = res.body?.list || [];
+    return list.slice(0, 12).map((t) => ({
+      id: t.id,
+      name: t.name,
+      cover: t.coverImgUrl || '',
+      updateFrequency: t.updateFrequency || '',
+      playCount: t.playCount || 0,
+      trackCount: (t.tracks || []).length
+    }));
+  } catch (err) {
+    return { error: err.message };
+  }
+});
+
+ipcMain.handle('netease:topDetail', async (e, id) => {
+  // 榜单 id 即云音乐官方歌单 id，复用歌单详情拉完整歌曲
+  try {
+    const res = await netease.playlist_detail({ id, limit: 60 });
+    const tracks = res.body?.playlist?.tracks || res.body?.data?.playlist?.tracks || [];
+    return mapNeteaseSongs(tracks);
+  } catch (err) {
+    return { error: err.message };
+  }
+});
+
+// ---------- 发现页：推荐歌单（无需登录，替代每日推荐） ----------
+ipcMain.handle('netease:personalized', async (e, limit = 30) => {
+  try {
+    const res = await netease.personalized({ limit });
+    const list = res.body?.result || [];
+    return list.map((p) => ({
+      id: p.id,
+      name: p.name,
+      cover: p.picUrl || '',
+      playCount: p.playCount || 0,
+      trackCount: p.trackCount || 0,
+      platform: 'netease'
+    }));
+  } catch (err) {
+    return { error: err.message };
+  }
+});
+
+// ---------- 相似歌曲推荐 ----------
+ipcMain.handle('netease:simi', async (e, id) => {
+  try {
+    const res = await netease.simi_song({ id });
+    const songs = res.body?.songs || [];
+    return mapNeteaseSongs(songs);
+  } catch (err) {
+    return { error: err.message };
+  }
+});
+
+// ---------- 桌面歌词窗口 ----------
+function ensureLyricWindow() {
+  if (lyricWindow && !lyricWindow.isDestroyed()) return lyricWindow;
+  lyricWindow = new BrowserWindow({
+    width: 780,
+    height: 96,
+    frame: false,
+    transparent: true,
+    resizable: false,
+    alwaysOnTop: true,
+    skipTaskbar: true,
+    hasShadow: false,
+    fullscreenable: false,
+    show: false,
+    webPreferences: {
+      preload: path.join(__dirname, 'preload.js'),
+      contextIsolation: true,
+      nodeIntegration: false
+    }
+  });
+  lyricWindow.loadFile(path.join(__dirname, 'src', 'lyric.html'));
+  lyricWindow.setAlwaysOnTop(true, 'screen-saver');
+  lyricWindow.setIgnoreMouseEvents(true, { forward: true });
+  lyricWindow.on('closed', () => { lyricWindow = null; });
+  return lyricWindow;
+}
+
+ipcMain.on('lyric:show', () => {
+  const w = ensureLyricWindow();
+  try {
+    const { screen } = require('electron');
+    const disp = screen.getPrimaryDisplay().workArea;
+    w.setPosition(Math.round(disp.x + (disp.width - 780) / 2), disp.y + 24);
+  } catch (e) { /* ignore */ }
+  w.show();
+});
+
+ipcMain.on('lyric:hide', () => {
+  if (lyricWindow && !lyricWindow.isDestroyed()) lyricWindow.hide();
+});
+
+ipcMain.on('lyric:update', (e, data) => {
+  if (lyricWindow && !lyricWindow.isDestroyed()) {
+    lyricWindow.webContents.send('lyric:data', data);
+  }
+});
+
+// ---------- 迷你模式 ----------
+ipcMain.on('window:mini', (e, on) => {
+  if (!mainWindow || mainWindow.isDestroyed()) return;
+  if (on) {
+    mainWindow.setMinimumSize(320, 120);
+    mainWindow.setSize(360, 130);
+  } else {
+    mainWindow.setMinimumSize(900, 600);
+    mainWindow.setSize(1200, 800);
+  }
+});
+
+// ---------- 系统托盘 ----------
+function toggleMainWindow() {
+  if (!mainWindow || mainWindow.isDestroyed()) { createWindow(); return; }
+  if (mainWindow.isVisible()) mainWindow.hide();
+  else { mainWindow.show(); mainWindow.focus(); }
+}
+
+function sendTrayAction(action) {
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.webContents.send('tray:action', action);
+  }
+}
+
+function createTray() {
+  try {
+    const iconPath = path.join(__dirname, 'assets', 'qing-icon.ico');
+    let trayIcon;
+    try {
+      const { nativeImage } = require('electron');
+      trayIcon = nativeImage.createFromPath(iconPath);
+      if (trayIcon.isEmpty()) trayIcon = nativeImage.createEmpty();
+    } catch (e) { trayIcon = undefined; }
+    tray = new Tray(trayIcon || iconPath);
+    tray.setToolTip('清·音乐播放器');
+    const menu = Menu.buildFromTemplate([
+      { label: '显示 / 隐藏窗口', click: () => toggleMainWindow() },
+      { label: '播放 / 暂停', click: () => sendTrayAction('playpause') },
+      { label: '上一曲', click: () => sendTrayAction('prev') },
+      { label: '下一曲', click: () => sendTrayAction('next') },
+      { label: '桌面歌词', click: () => sendTrayAction('lyric') },
+      { type: 'separator' },
+      {
+        label: '开机自启',
+        type: 'checkbox',
+        checked: app.getLoginItemSettings().openAtLogin,
+        click: (item) => { app.setLoginItemSettings({ openAtLogin: item.checked }); }
+      },
+      { type: 'separator' },
+      { label: '退出', click: () => { app.quit(); } }
+    ]);
+    tray.setContextMenu(menu);
+    tray.on('click', () => toggleMainWindow());
+  } catch (e) {
+    console.error('[tray] 创建失败:', e.message);
+  }
+}
+
+// 注册全局快捷键 / 托盘 / 开机自启（在 app ready 后）
+app.whenReady().then(() => {
+  try { createTray(); } catch (e) { console.error(e); }
+  // 全局快捷键（应用未聚焦时也可用）：Ctrl+Alt+Space 播放/暂停，Ctrl+Alt+左右 切歌，Ctrl+Alt+L 桌面歌词
+  const hotkeys = [
+    ['CommandOrControl+Alt+Space', 'playpause'],
+    ['CommandOrControl+Alt+Right', 'next'],
+    ['CommandOrControl+Alt+Left', 'prev']
+  ];
+  hotkeys.forEach(([acc, act]) => {
+    try {
+      globalShortcut.register(acc, () => sendTrayAction(act));
+    } catch (e) { /* ignore */ }
+  });
+  try {
+    globalShortcut.register('CommandOrControl+Alt+L', () => {
+      if (lyricWindow && !lyricWindow.isDestroyed()) lyricWindow.hide();
+      else { const w = ensureLyricWindow(); w.show(); }
+    });
+  } catch (e) { /* ignore */ }
+});
+
+app.on('will-quit', () => {
+  try { globalShortcut.unregisterAll(); } catch (e) { /* ignore */ }
+});

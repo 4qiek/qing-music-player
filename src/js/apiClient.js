@@ -94,6 +94,28 @@ export const apiClient = {
     return cachedRequest(key, () => api.neteasePlaylistDetail(id), 'playlistDetail', opts);
   },
 
+  // ========== 发现页 ==========
+  neteaseToplist(opts = {}) {
+    const key = 'cache:netease:toplist';
+    return cachedRequest(key, () => api.neteaseToplist(), 'playlist', opts);
+  },
+
+  neteaseTopDetail(idx, opts = {}) {
+    const key = `cache:netease:topDetail:${idx}`;
+    return cachedRequest(key, () => api.neteaseTopDetail(idx), 'playlistDetail', opts);
+  },
+
+  neteasePersonalized(limit = 30, opts = {}) {
+    const key = `cache:netease:personalized:${limit}`;
+    return cachedRequest(key, () => api.neteasePersonalized(limit), 'playlist', opts);
+  },
+
+  neteaseSimi(id, opts = {}) {
+    // 相似歌曲变化快，短缓存 3 分钟
+    const key = `cache:netease:simi:${id}`;
+    return cachedRequest(key, () => api.neteaseSimi(id), 'search', opts);
+  },
+
   // ========== QQ音乐 ==========
   qqSearch(keyword, opts = {}) {
     const key = `cache:qq:search:${keyword}`;

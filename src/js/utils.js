@@ -79,6 +79,18 @@ export function sleep(ms) {
 }
 
 /**
+ * 数字格式化（万/亿）
+ * @param {number} n
+ * @returns {string}
+ */
+export function formatNum(n) {
+  if (!n && n !== 0) return '0';
+  if (n >= 100000000) return (n / 100000000).toFixed(1).replace(/\.0$/, '') + '亿';
+  if (n >= 10000) return (n / 10000).toFixed(1).replace(/\.0$/, '') + '万';
+  return String(n);
+}
+
+/**
  * HTML 转义，防止 XSS
  * @param {string} str
  * @returns {string}

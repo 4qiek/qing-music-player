@@ -17,6 +17,18 @@ const initialState = {
   duration: 0,
   volume: 0.8,
   quality: 'standard',
+  // 播放模式：list 列表循环 / single 单曲循环 / shuffle 随机 / smart 心动
+  playMode: 'list',
+  // 收藏夹 / 播放历史
+  favorites: [],
+  history: [],
+  // 睡眠定时（剩余毫秒）
+  sleepTimerRemaining: 0,
+  // 桌面歌词 / 迷你模式
+  lyricDesktopOn: false,
+  miniMode: false,
+  // 队列面板可见
+  queueVisible: false,
 
   // 界面
   platform: 'netease',

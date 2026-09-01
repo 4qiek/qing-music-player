@@ -20,6 +20,14 @@ import {
   toast
 } from './ui.js';
 import * as audioEngine from './audioEngine.js';
+import { initDiscover } from './discover.js';
+import { initFavorites } from './favorites.js';
+import { initHistory } from './history.js';
+import { initQueue } from './queue.js';
+import { initSleepTimer } from './sleepTimer.js';
+import { initMini } from './mini.js';
+import { initDesktopLyric, toggleDesktopLyric } from './desktopLyric.js';
+import * as visualizer from './visualizer.js';
 
 export { switchView };
 
@@ -44,23 +52,67 @@ export function initApp() {
   initLogin();
   player.initAudioEvents();
 
-  // 4. 状态订阅：播放状态 → 通知
+  // 4. 新功能模块
+  player.loadFavorites();
+  player.loadHistory();
+  player.renderPlayMode();
+  initDiscover();
+  initFavorites();
+  initHistory();
+  initQueue();
+  initSleepTimer();
+  initMini();
+  initDesktopLyric();
+
+  // 播放模式切换
+  const modeBtn = document.getElementById('playModeBtn');
+  if (modeBtn) modeBtn.addEventListener('click', player.cyclePlayMode);
+
+  // 收藏按钮（主面板 + 详情页）
+  const favBtn = document.getElementById('favBtn');
+  if (favBtn) favBtn.addEventListener('click', () => player.toggleFavorite(store.get('currentTrack')));
+  const pdFavBtn = document.getElementById('pdFavBtn');
+  if (pdFavBtn) pdFavBtn.addEventListener('click', () => player.toggleFavorite(store.get('currentTrack')));
+
+  // 相似歌曲推荐
+  const simiBtn = document.getElementById('simiBtn');
+  if (simiBtn) simiBtn.addEventListener('click', () => player.addSimilar(store.get('currentTrack')));
+
+  // 频谱可视化：播放详情页开关时启停
+  const detail = document.getElementById('playerDetail');
+  if (detail && typeof MutationObserver !== 'undefined') {
+    new MutationObserver(() => {
+      if (detail.classList.contains('show')) visualizer.startVisualizer();
+      else visualizer.stopVisualizer();
+    }).observe(detail, { attributes: true, attributeFilter: ['class'] });
+  }
+
+  // 系统托盘动作
+  if (window.qingAPI && window.qingAPI.onTrayAction) {
+    window.qingAPI.onTrayAction((action) => {
+      if (action === 'playpause') player.togglePlay();
+      else if (action === 'next') player.nextTrack();
+      else if (action === 'prev') player.prevTrack();
+      else if (action === 'lyric') toggleDesktopLyric();
+    });
+  }
+
+  // 5. 状态订阅：播放状态 → 通知
   store.subscribe('isPlaying', ({ value }) => {
     eventBus.emit('playing:change', value);
   });
 
-  // 5. 初始渲染
+  // 6. 初始渲染
   renderLocalList();
   switchView('local');
 
-  // 6. 磁带模式开关（底部/左栏）
+  // 7. 磁带模式开关
   const tapeToggle = document.getElementById('tapeToggle');
   if (tapeToggle) {
     tapeToggle.addEventListener('click', () => {
       audioEngine.toggleTapeEffect(audio);
     });
   }
-  // 磁带状态同步 UI
   store.subscribe('tapeEnabled', ({ value }) => {
     document.querySelectorAll('.tape-indicator').forEach((el) => {
       el.classList.toggle('active', value);
@@ -69,7 +121,7 @@ export function initApp() {
     if (tapeToggle) tapeToggle.classList.toggle('active', value);
   });
 
-  // 7. 音质菜单
+  // 8. 音质菜单
   initQualityMenu();
 
   // 启动就绪

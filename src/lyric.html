@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; user-select: none; }
+  html, body {
+    background: transparent;
+    overflow: hidden;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  }
+  #wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 100vw;
+    height: 96px;
+    padding: 8px 16px;
+    text-align: center;
+  }
+  .l-main {
+    font-size: 21px;
+    font-weight: 600;
+    color: #ffffff;
+    text-shadow: 0 1px 6px rgba(0,0,0,0.85), 0 0 2px rgba(0,0,0,0.9);
+    line-height: 1.35;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+    padding: 4px 18px;
+    border-radius: 10px;
+    background: rgba(0,0,0,0.38);
+    backdrop-filter: blur(6px);
+  }
+  .l-sub {
+    margin-top: 4px;
+    font-size: 14px;
+    color: rgba(255,255,255,0.72);
+    text-shadow: 0 1px 4px rgba(0,0,0,0.8);
+    line-height: 1.3;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+    padding: 2px 14px;
+    border-radius: 8px;
+    background: rgba(0,0,0,0.28);
+  }
+  .empty { color: rgba(255,255,255,0.5); }
+  body.dragging .l-main { background: rgba(255,255,255,0.2); }
+</style>
+</head>
+<body>
+<div id="wrap">
+  <div class="l-main empty" id="lMain">♪ 未在播放</div>
+  <div class="l-sub empty" id="lSub">暂无歌词</div>
+</div>
+<script>
+  (function () {
+    const mainEl = document.getElementById('lMain');
+    const subEl = document.getElementById('lSub');
+    function render(data) {
+      if (!data || !data.text) {
+        mainEl.textContent = '♪ 未在播放';
+        mainEl.classList.add('empty');
+        subEl.textContent = '暂无歌词';
+        subEl.classList.add('empty');
+        return;
+      }
+      mainEl.textContent = data.text;
+      mainEl.classList.remove('empty');
+      subEl.textContent = data.next || '';
+      subEl.classList.toggle('empty', !data.next);
+    }
+    if (window.qingAPI && window.qingAPI.onLyricData) {
+      window.qingAPI.onLyricData(render);
+    }
+  })();
+</script>
+</body>
+</html>

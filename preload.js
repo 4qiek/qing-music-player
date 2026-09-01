@@ -9,6 +9,11 @@ contextBridge.exposeInMainWorld('qingAPI', {
   neteaseLogin: (data) => ipcRenderer.invoke('netease:login', data),
   neteasePlaylist: (uid) => ipcRenderer.invoke('netease:playlist', uid),
   neteasePlaylistDetail: (id) => ipcRenderer.invoke('netease:playlistDetail', id),
+  // 发现页
+  neteaseToplist: () => ipcRenderer.invoke('netease:toplist'),
+  neteaseTopDetail: (idx) => ipcRenderer.invoke('netease:topDetail', idx),
+  neteasePersonalized: (limit) => ipcRenderer.invoke('netease:personalized', limit || 30),
+  neteaseSimi: (id) => ipcRenderer.invoke('netease:simi', id),
   // QQ音乐
   qqSearch: (keyword) => ipcRenderer.invoke('qq:search', keyword),
   qqUrl: (songmid) => ipcRenderer.invoke('qq:url', songmid),
@@ -28,7 +33,21 @@ contextBridge.exposeInMainWorld('qingAPI', {
   applySystemEq: (values) => ipcRenderer.invoke('system:applyEq', values),
   checkEqAvailable: () => ipcRenderer.invoke('system:checkEq'),
   installSystemEq: () => ipcRenderer.invoke('system:installEq'),
-  // 网易云搜索歌词（用于其他播放器的歌词匹配）
-  neteaseSearch: (keyword) => ipcRenderer.invoke('netease:search', keyword),
-  neteaseLyric: (id) => ipcRenderer.invoke('netease:lyric', id)
+  // 桌面歌词 / 迷你模式
+  lyricShow: () => ipcRenderer.send('lyric:show'),
+  lyricHide: () => ipcRenderer.send('lyric:hide'),
+  lyricUpdate: (data) => ipcRenderer.send('lyric:update', data),
+  setMiniMode: (on) => ipcRenderer.send('window:mini', on),
+  // 托盘动作监听（播放/暂停/切歌/歌词开关）
+  onTrayAction: (cb) => {
+    const listener = (_e, action) => cb(action);
+    ipcRenderer.on('tray:action', listener);
+    return () => ipcRenderer.removeListener('tray:action', listener);
+  },
+  // 桌面歌词窗口数据监听
+  onLyricData: (cb) => {
+    const listener = (_e, data) => cb(data);
+    ipcRenderer.on('lyric:data', listener);
+    return () => ipcRenderer.removeListener('lyric:data', listener);
+  }
 });

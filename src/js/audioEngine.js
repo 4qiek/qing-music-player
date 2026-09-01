@@ -29,6 +29,25 @@ let sourceNode = null;
 const eqFilters = [];
 let tapeNodes = {};
 let usbCheckTimer = null;
+let analyserNode = null;
+
+/**
+ * 频谱分析器（懒创建，供可视化使用）
+ * @returns {AnalyserNode|null}
+ */
+function ensureAnalyser() {
+  if (!audioCtx) return null;
+  if (!analyserNode) {
+    analyserNode = audioCtx.createAnalyser();
+    analyserNode.fftSize = 256;
+    analyserNode.smoothingTimeConstant = 0.82;
+  }
+  return analyserNode;
+}
+
+export function getAnalyser() {
+  return analyserNode;
+}
 
 /**
  * 初始化 AudioContext 与 EQ 链（懒加载，首次播放/调 EQ 时创建）
@@ -50,6 +69,13 @@ export function initAudioCtx(audio) {
     prev = eq;
   });
   prev.connect(audioCtx.destination);
+  // 频谱分析器挂在 EQ 链末端（不改变信号）
+  const an = ensureAnalyser();
+  if (an) {
+    try { prev.disconnect(audioCtx.destination); } catch (e) { /* ignore */ }
+    prev.connect(an);
+    an.connect(audioCtx.destination);
+  }
   return audioCtx;
 }
 
@@ -151,14 +177,16 @@ function initTapeNodes() {
 function connectTapeChain() {
   if (!audioCtx || !tapeNodes.saturation) return;
   try { sourceNode.disconnect(); } catch (e) { /* ignore */ }
-  // 新链：source → saturation → lowpass → lowshelf → delay → EQ → destination
+  // 新链：source → saturation → lowpass → lowshelf → delay → EQ → analyser → destination
   sourceNode.connect(tapeNodes.saturation);
   tapeNodes.saturation.connect(tapeNodes.lowpass);
   tapeNodes.lowpass.connect(tapeNodes.lowshelf);
   tapeNodes.lowshelf.connect(tapeNodes.delay);
   let prev = tapeNodes.delay;
   eqFilters.forEach((eq) => { prev.connect(eq); prev = eq; });
-  prev.connect(audioCtx.destination);
+  const an = ensureAnalyser();
+  if (an) { prev.connect(an); an.connect(audioCtx.destination); }
+  else prev.connect(audioCtx.destination);
 }
 
 function disconnectTapeChain() {
@@ -166,7 +194,9 @@ function disconnectTapeChain() {
   try { sourceNode.disconnect(); } catch (e) { /* ignore */ }
   let prev = sourceNode;
   eqFilters.forEach((eq) => { prev.connect(eq); prev = eq; });
-  prev.connect(audioCtx.destination);
+  const an = ensureAnalyser();
+  if (an) { prev.connect(an); an.connect(audioCtx.destination); }
+  else prev.connect(audioCtx.destination);
 }
 
 export function enableTapeEffect(audio) {
@@ -222,6 +252,7 @@ export default {
   EQ_PRESETS,
   initAudioCtx,
   getAudioCtx,
+  getAnalyser,
   getEqFilters,
   setEqGain,
   resetEqGains,

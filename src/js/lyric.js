@@ -97,6 +97,16 @@ export function updateLyric(currentTime) {
     const lineHeight = lines[idx].offsetHeight + 16;
     lyricEl.style.transform = `translateY(${-idx * lineHeight}px)`;
   }
+
+  // 桌面歌词窗口同步（开启时）
+  if (store.get('lyricDesktopOn') && window.qingAPI && window.qingAPI.lyricUpdate) {
+    const cur = lyricData[idx];
+    const next = lyricData[idx + 1];
+    window.qingAPI.lyricUpdate({
+      text: cur ? cur.text.split('\n')[0] : '',
+      next: next ? next.text.split('\n')[0] : ''
+    });
+  }
 }
 
 export default { parseLRC, loadLyric, updateLyric, formatTime };

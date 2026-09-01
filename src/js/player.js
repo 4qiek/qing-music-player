@@ -13,6 +13,171 @@ import { formatTime } from './utils.js';
 const audio = document.getElementById('audio');
 const PLATFORM_NAME = { netease: '网易云音乐', qq: 'QQ音乐', kugou: '酷狗音乐', local: '本地音乐' };
 
+// ===== 播放模式 =====
+export function cyclePlayMode() {
+  const order = ['list', 'single', 'shuffle', 'smart'];
+  const cur = store.get('playMode');
+  const next = order[(order.indexOf(cur) + 1) % order.length];
+  store.set('playMode', next);
+  renderPlayMode();
+  const label = { list: '列表循环', single: '单曲循环', shuffle: '随机播放', smart: '心动模式' }[next];
+  eventBus.emit('toast', { type: 'info', message: '播放模式：' + label });
+  return next;
+}
+
+export function renderPlayMode() {
+  const mode = store.get('playMode');
+  const label = { list: '列表循环', single: '单曲循环', shuffle: '随机播放', smart: '心动模式' }[mode];
+  const btn = $('playModeBtn');
+  if (btn) {
+    btn.title = '播放模式：' + label + '（点击切换）';
+    btn.classList.toggle('active', mode !== 'list');
+  }
+  const txt = $('playModeLabel');
+  if (txt) txt.textContent = label;
+  const icon = $('playModeIcon');
+  if (icon) {
+    const href = { list: '#i-repeat', single: '#i-repeat1', shuffle: '#i-shuffle', smart: '#i-spark' }[mode] || '#i-repeat';
+    icon.innerHTML = '<use href="' + href + '"/>';
+  }
+}
+
+function pickNextIndex(dir) {
+  const queue = store.get('currentQueue');
+  if (queue.length === 0) return -1;
+  const cur = store.get('currentIndex');
+  const mode = store.get('playMode');
+  if (mode === 'single') return cur;
+  if (mode === 'shuffle' || mode === 'smart') {
+    if (queue.length === 1) return 0;
+    let r;
+    do { r = Math.floor(Math.random() * queue.length); } while (r === cur);
+    return r;
+  }
+  return (cur + (dir || 1) + queue.length) % queue.length;
+}
+
+// ===== 收藏夹 =====
+export function favoriteKey(t) {
+  return t ? (t.platform + ':' + (t.id || t.path || t.name)) : '';
+}
+
+export function isFavorite(t) {
+  return store.get('favorites').some((f) => favoriteKey(f) === favoriteKey(t));
+}
+
+export function toggleFavorite(t) {
+  if (!t) return false;
+  const favs = [...store.get('favorites')];
+  const key = favoriteKey(t);
+  const i = favs.findIndex((f) => favoriteKey(f) === key);
+  let on;
+  if (i >= 0) { favs.splice(i, 1); on = false; }
+  else { favs.unshift({ ...t }); on = true; }
+  store.set('favorites', favs);
+  try { localStorage.setItem('qing-favorites', JSON.stringify(favs)); } catch (e) { /* ignore */ }
+  renderFavoriteButtons();
+  eventBus.emit('toast', { type: on ? 'success' : 'info', message: on ? '已收藏到我的收藏' : '已取消收藏' });
+  return on;
+}
+
+export function loadFavorites() {
+  try {
+    const raw = localStorage.getItem('qing-favorites');
+    if (raw) store.set('favorites', JSON.parse(raw));
+  } catch (e) { /* ignore */ }
+}
+
+function renderFavoriteButtons() {
+  const cur = store.get('currentTrack');
+  document.querySelectorAll('.fav-btn').forEach((b) => {
+    b.classList.toggle('active', !!(cur && isFavorite(cur)));
+  });
+}
+
+// ===== 播放历史 =====
+function recordHistory(t) {
+  if (!t) return;
+  const key = favoriteKey(t);
+  const hist = store.get('history').filter((h) => favoriteKey(h) !== key);
+  hist.unshift({ ...t, playedAt: Date.now() });
+  if (hist.length > 60) hist.length = 60;
+  store.set('history', hist);
+  try { localStorage.setItem('qing-history', JSON.stringify(hist)); } catch (e) { /* ignore */ }
+}
+
+export function loadHistory() {
+  try {
+    const raw = localStorage.getItem('qing-history');
+    if (raw) store.set('history', JSON.parse(raw));
+  } catch (e) { /* ignore */ }
+}
+
+export function clearHistory() {
+  store.set('history', []);
+  try { localStorage.removeItem('qing-history'); } catch (e) { /* ignore */ }
+}
+
+// ===== 跨平台自动兜底：QQ/酷狗无法播放时用网易云搜同款 =====
+async function fallbackToNetease(t) {
+  if (!t || t.platform === 'netease' || t.platform === 'local') return false;
+  const kw = (t.name + ' ' + (t.artist || '')).trim();
+  if (!kw) return false;
+  eventBus.emit('toast', { type: 'info', message: '原平台无法播放，正在尝试网易云…' });
+  try {
+    const res = await apiClient.neteaseSearch(kw);
+    const list = (res && !res.error) ? res : [];
+    const hit = list.find((x) => x.name && x.name.toLowerCase() === String(t.name).toLowerCase()) || list[0];
+    if (!hit) {
+      eventBus.emit('toast', { type: 'error', message: '该歌曲受版权保护，网易云也没有找到' });
+      return false;
+    }
+    const urlRes = await apiClient.neteaseUrl({ id: hit.id, level: store.get('quality') });
+    if (!urlRes || urlRes.error || !urlRes.url) {
+      eventBus.emit('toast', { type: 'error', message: '网易云也无法播放这首歌曲' });
+      return false;
+    }
+    hit.url = urlRes.url;
+    hit.artist = hit.artist || t.artist;
+    hit.album = hit.album || t.album;
+    const queue = [...store.get('currentQueue')];
+    const idx = store.get('currentIndex');
+    if (idx >= 0 && idx < queue.length) queue[idx] = hit;
+    store.set('currentQueue', queue);
+    playTrack(hit);
+    eventBus.emit('toast', { type: 'success', message: '已自动切换到网易云版本播放' });
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+
+// ===== 相似歌曲推荐（追加到队列） =====
+export async function addSimilar(t) {
+  if (!t || t.platform !== 'netease') {
+    eventBus.emit('toast', { type: 'info', message: '相似推荐仅支持网易云歌曲' });
+    return;
+  }
+  eventBus.emit('toast', { type: 'info', message: '正在获取相似歌曲…' });
+  const res = await apiClient.neteaseSimi(t.id);
+  if (!res || res.error || !res.length) {
+    eventBus.emit('toast', { type: 'error', message: '暂无相似歌曲推荐' });
+    return;
+  }
+  const queue = [...store.get('currentQueue')];
+  const added = [];
+  res.slice(0, 10).forEach((s) => {
+    if (!queue.some((q) => q.platform === 'netease' && q.id === s.id)) {
+      queue.push(s);
+      added.push(s);
+    }
+  });
+  store.set('currentQueue', queue);
+  eventBus.emit('toast', { type: 'success', message: '已推荐 ' + added.length + ' 首相似歌曲并加入队列' });
+  return added;
+}
+
+
 // ===== 工具：DOM 查询 =====
 const $ = (id) => document.getElementById(id);
 
@@ -34,6 +199,8 @@ export async function playTrack(track) {
   }
 
   setNowPlaying(track, track.artist);
+  recordHistory(track);
+  renderFavoriteButtons();
   updatePlayButtons(false);
   updatePlayingRows();
   updateBackground(track.cover);
@@ -152,7 +319,7 @@ export function togglePlay() {
 export function prevTrack() {
   const queue = store.get('currentQueue');
   if (queue.length === 0) return;
-  let idx = (store.get('currentIndex') - 1 + queue.length) % queue.length;
+  const idx = pickNextIndex(-1);
   store.set('currentIndex', idx);
   const t = queue[idx];
   if (t.platform === 'local') playTrack(t);
@@ -162,7 +329,7 @@ export function prevTrack() {
 export function nextTrack() {
   const queue = store.get('currentQueue');
   if (queue.length === 0) return;
-  let idx = (store.get('currentIndex') + 1) % queue.length;
+  const idx = pickNextIndex(1);
   store.set('currentIndex', idx);
   const t = queue[idx];
   if (t.platform === 'local') playTrack(t);
@@ -182,7 +349,10 @@ async function playOnlineFromQueue(idx) {
     urlRes = { error: err.message };
   }
   if (urlRes.error || !urlRes.url) {
-    setNowPlaying(t, `暂无法播放：${urlRes.error || '接口暂不可用'}`);
+    const fallbackOk = await fallbackToNetease(t);
+    if (!fallbackOk) {
+      setNowPlaying(t, `暂无法播放：${urlRes.error || '接口暂不可用'}`);
+    }
     return;
   }
   t.url = urlRes.url;
@@ -205,7 +375,10 @@ export async function playOnline(idx) {
     urlRes = { error: err.message };
   }
   if (urlRes.error || !urlRes.url) {
-    setNowPlaying(t, `暂无法播放：${urlRes.error || '接口暂不可用'}`);
+    const fallbackOk = await fallbackToNetease(t);
+    if (!fallbackOk) {
+      setNowPlaying(t, `暂无法播放：${urlRes.error || '接口暂不可用'}`);
+    }
     return;
   }
   t.url = urlRes.url;
@@ -379,5 +552,14 @@ export default {
   initAudioEvents,
   setNowPlaying,
   updateMainPanel,
-  updateDetailPage
+  updateDetailPage,
+  cyclePlayMode,
+  renderPlayMode,
+  favoriteKey,
+  isFavorite,
+  toggleFavorite,
+  loadFavorites,
+  loadHistory,
+  clearHistory,
+  addSimilar
 };
