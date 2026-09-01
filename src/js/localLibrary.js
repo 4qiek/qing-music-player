@@ -9,7 +9,7 @@ import { store } from './store.js';
 import { playLocal } from './player.js';
 import { apiClient } from './apiClient.js';
 import { eventBus } from './eventBus.js';
-import { sleep, PLATFORM_LABEL } from './utils.js';
+import { sleep, PLATFORM_LABEL, escapeHtml } from './utils.js';
 import { bindCoverFallback } from './metaMatch.js';
 import { enrichAudio } from './mediaLib.js';
 
@@ -24,10 +24,6 @@ function buildKeyword(name) {
     .replace(/[._]+/g, ' ')
     .replace(/\s+/g, ' ')
     .trim();
-}
-
-function escapeName(str) {
-  return String(str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
 function trackTitle(t) {
@@ -137,9 +133,71 @@ export async function matchAllLocal() {
 }
 
 /** 渲染本地列表 */
+const LOCAL_PAGE_SIZE = 80;
+let _localRendered = 0;
+
+function _localRowHtml(t, i) {
+  const coverHtml = t.cover
+    ? `<img class="s-cover" src="${t.cover}" alt="" loading="lazy" referrerpolicy="no-referrer">`
+    : `<div class="s-cover" style="background:var(--hover);display:flex;align-items:center;justify-content:center;"><svg style="width:16px;height:16px;color:var(--text2)"><use href="#i-music"/></svg></div>`;
+  const matched = !!(t.matchedId || t.matchedName);
+  const matchBtn = t.matchedId
+    ? `<button class="row-ok" data-match="${i}" title="已匹配：${escapeHtml(t.matchedName || t.name)}（点击重新匹配）" aria-label="重新匹配"><svg><use href="#i-check"/></svg></button>`
+    : `<button class="row-match" data-match="${i}" title="联网匹配歌手/专辑/封面/歌词" aria-label="匹配线上信息"><svg><use href="#i-cloud"/></svg></button>`;
+  return `<div class="song-row ${matched ? 'matched' : ''}" data-type="local" data-idx="${i}">
+    <span class="idx">${i + 1}</span>
+    <span>${coverHtml}</span>
+    <span class="s-name">${escapeHtml(trackTitle(t))}</span>
+    <span class="s-artist">${escapeHtml(t.artist || '本地曲目')}</span>
+    <span class="s-dur">${t.duration ? fmtDur(t.duration) : '--:--'}</span>
+    <span class="s-platform">
+      本地
+      ${matchBtn}
+      <button class="row-del" data-del="${i}" title="从列表中移除" aria-label="移除"><svg><use href="#i-trash"/></svg></button>
+    </span>
+  </div>`;
+}
+
+function _appendLocalPage(el, tracks) {
+  if (_localRendered >= tracks.length) return;
+  const end = Math.min(_localRendered + LOCAL_PAGE_SIZE, tracks.length);
+  let html = '';
+  for (let i = _localRendered; i < end; i++) html += _localRowHtml(tracks[i], i);
+  el.insertAdjacentHTML('beforeend', html);
+  _localRendered = end;
+  bindCoverFallback(el, '#i-music');
+}
+
+function _ensureLocalDelegation(el) {
+  if (el._delegated) return;
+  el._delegated = true;
+  el.addEventListener('click', (e) => {
+    const delBtn = e.target.closest('.row-del');
+    if (delBtn) { e.stopPropagation(); removeLocal(+delBtn.dataset.del); return; }
+    const matchBtn = e.target.closest('.row-match, .row-ok');
+    if (matchBtn) {
+      e.stopPropagation();
+      const idx = +matchBtn.dataset.match;
+      matchLocal(idx).then((hit) => {
+        if (!hit) eventBus.emit('toast', { type: 'info', message: '未找到对应的线上歌曲' });
+        else eventBus.emit('toast', { type: 'success', message: `已匹配：${hit.artist || ''} - ${hit.name}` });
+      });
+      return;
+    }
+    const row = e.target.closest('.song-row');
+    if (row) playLocal(+row.dataset.idx);
+  });
+  el.addEventListener('scroll', () => {
+    if (el.scrollTop + el.clientHeight >= el.scrollHeight - 300) {
+      _appendLocalPage(el, store.get('localTracks'));
+    }
+  });
+}
+
 export function renderLocalList() {
   const el = $('localList');
   if (!el) return;
+  _ensureLocalDelegation(el);
   const localTracks = store.get('localTracks');
   if (localTracks.length === 0) {
     el.innerHTML = `
@@ -148,50 +206,12 @@ export function renderLocalList() {
         <p>还没有导入音乐</p>
         <p class="sub-hint">可「导入音乐」或「添加文件夹」自动扫描</p>
       </div>`;
+    _localRendered = 0;
     return;
   }
-  let html = '<div class="song-list-header"><span>#</span><span></span><span>标题</span><span>歌手</span><span style="text-align:right">时长</span><span>操作</span></div>';
-  localTracks.forEach((t, i) => {
-    const coverHtml = t.cover
-      ? `<img class="s-cover" src="${t.cover}" alt="" loading="lazy" referrerpolicy="no-referrer">`
-      : `<div class="s-cover" style="background:var(--hover);display:flex;align-items:center;justify-content:center;"><svg style="width:16px;height:16px;color:var(--text2)"><use href="#i-music"/></svg></div>`;
-    const matched = !!(t.matchedId || t.matchedName);
-    const matchBtn = t.matchedId
-      ? `<button class="row-ok" data-match="${i}" title="已匹配：${escapeName(t.matchedName || t.name)}（点击重新匹配）" aria-label="重新匹配"><svg><use href="#i-check"/></svg></button>`
-      : `<button class="row-match" data-match="${i}" title="联网匹配歌手/专辑/封面/歌词" aria-label="匹配线上信息"><svg><use href="#i-cloud"/></svg></button>`;
-    html += `<div class="song-row ${matched ? 'matched' : ''}" data-type="local" data-idx="${i}">
-      <span class="idx">${i + 1}</span>
-      <span>${coverHtml}</span>
-      <span class="s-name">${escapeName(trackTitle(t))}</span>
-      <span class="s-artist">${escapeName(t.artist || '本地曲目')}</span>
-      <span class="s-dur">${t.duration ? fmtDur(t.duration) : '--:--'}</span>
-      <span class="s-platform">
-        本地
-        ${matchBtn}
-        <button class="row-del" data-del="${i}" title="从列表中移除" aria-label="移除"><svg><use href="#i-trash"/></svg></button>
-      </span>
-    </div>`;
-  });
-  el.innerHTML = html;
-  bindCoverFallback(el, '#i-music');
-  el.querySelectorAll('.song-row').forEach((row) =>
-    row.addEventListener('click', () => playLocal(+row.dataset.idx))
-  );
-  el.querySelectorAll('.row-del').forEach((btn) =>
-    btn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      removeLocal(+btn.dataset.del);
-    })
-  );
-  el.querySelectorAll('.row-match, .row-ok').forEach((btn) =>
-    btn.addEventListener('click', async (e) => {
-      e.stopPropagation();
-      const idx = +btn.dataset.match;
-      const hit = await matchLocal(idx);
-      if (!hit) eventBus.emit('toast', { type: 'info', message: '未找到对应的线上歌曲' });
-      else eventBus.emit('toast', { type: 'success', message: `已匹配：${hit.artist || ''} - ${hit.name}` });
-    })
-  );
+  _localRendered = 0;
+  el.innerHTML = '<div class="song-list-header"><span>#</span><span></span><span>标题</span><span>歌手</span><span style="text-align:right">时长</span><span>操作</span></div>';
+  _appendLocalPage(el, localTracks);
 }
 
 function fmtDur(ms) {

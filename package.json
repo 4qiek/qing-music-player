@@ -2,7 +2,7 @@
   "name": "qing-player",
   "version": "1.0.0",
   "description": "清 - 灰白风万能播放器（音乐/视频/图片/书籍/浏览器）",
-  "main": "main.js",
+  "main": "main/index.js",
   "author": "Qing",
   "license": "MIT",
   "scripts": {
@@ -25,7 +25,7 @@
       "output": "dist"
     },
     "files": [
-      "main.js",
+      "main/**/*",
       "main-media.js",
       "preload.js",
       "src/**/*",

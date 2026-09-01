@@ -3,6 +3,7 @@
  * 负责模块装配与初始化、视图切换入口、启动流程编排。
  */
 import { store } from './store.js';
+import { injectIcons } from './icons.js';
 import { eventBus } from './eventBus.js';
 import { switchView, initNavigation } from './view.js';
 import * as player from './player.js';
@@ -41,6 +42,8 @@ import { initCommander } from './commander.js';
 export { switchView };
 
 export function initApp() {
+  // 0. 注入 SVG 图标精灵图
+  injectIcons();
   // 0. 恢复持久化状态（音量 / 播放模式 / EQ / 路径型媒体库）
   restoreState();
   // 1. 基础设施

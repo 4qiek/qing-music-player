@@ -3,16 +3,13 @@
  * 职责：图片导入、缩略图网格、全屏查看（缩放 + 上一张/下一张）。
  */
 import { store } from './store.js';
+import { escapeHtml } from './utils.js';
 import { eventBus } from './eventBus.js';
 
 const $ = (id) => document.getElementById(id);
 
 let viewerIndex = 0;
 let viewerZoom = 1;
-
-function escapeName(str) {
-  return String(str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-}
 
 export function initImage() {
   const fileInput = $('imageFileInput');
@@ -71,10 +68,10 @@ export function renderImageGrid() {
     return;
   }
   grid.innerHTML = imgs.map((img, i) => `
-    <div class="img-cell" data-idx="${i}" title="${escapeName(img.name)}">
-      <img src="${img.url}" alt="${escapeName(img.name)}" loading="lazy">
+    <div class="img-cell" data-idx="${i}" title="${escapeHtml(img.name)}">
+      <img src="${img.url}" alt="${escapeHtml(img.name)}" loading="lazy">
       <button class="img-del" data-del="${i}" title="移除图片" aria-label="移除图片"><svg><use href="#i-trash"/></svg></button>
-      <div class="img-name">${escapeName(img.name)}</div>
+      <div class="img-name">${escapeHtml(img.name)}</div>
     </div>`).join('');
   grid.querySelectorAll('.img-cell').forEach((cell) =>
     cell.addEventListener('click', () => openViewer(+cell.dataset.idx))

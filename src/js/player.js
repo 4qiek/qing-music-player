@@ -10,6 +10,16 @@ import * as audioEngine from './audioEngine.js';
 import { loadLyric, updateLyric } from './lyric.js';
 import { formatTime, PLATFORM_NAME } from './utils.js';
 
+/** 把播放接口错误分类为用户友好的提示 */
+function classifyPlayError(error) {
+  const msg = String(error || '').toLowerCase();
+  if (!error) return '接口暂不可用，请稍后重试';
+  if (/enotfound|econnrefused|etimedout|networkerror|failed to fetch|net::|连接失败|网络/.test(msg)) return '网络连接失败，请检查网络设置';
+  if (/403|版权|无版权|not found|暂无资源|no copyright|vip|付费|灰色/.test(msg)) return '该歌曲受版权保护或需付费，暂无法播放';
+  if (/401|400|参数|invalid/.test(msg)) return '接口请求失败，请稍后重试';
+  return `播放失败：${error}`;
+}
+
 const audio = document.getElementById('audio');
 // ===== 播放模式 =====
 export function cyclePlayMode() {
@@ -355,7 +365,7 @@ async function playOnlineFromQueue(idx) {
   if (urlRes.error || !urlRes.url) {
     const fallbackOk = await fallbackToNetease(t);
     if (!fallbackOk) {
-      setNowPlaying(t, `暂无法播放：${urlRes.error || '接口暂不可用'}`);
+      setNowPlaying(t, `暂无法播放：${classifyPlayError(urlRes.error)}`);
     }
     return;
   }
@@ -381,7 +391,7 @@ export async function playOnline(idx) {
   if (urlRes.error || !urlRes.url) {
     const fallbackOk = await fallbackToNetease(t);
     if (!fallbackOk) {
-      setNowPlaying(t, `暂无法播放：${urlRes.error || '接口暂不可用'}`);
+      setNowPlaying(t, `暂无法播放：${classifyPlayError(urlRes.error)}`);
     }
     return;
   }

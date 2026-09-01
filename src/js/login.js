@@ -3,6 +3,7 @@
  * 支持账号密码登录 + 扫码登录（推荐，绕过手机号密码风控）
  */
 import { store } from './store.js';
+import { escapeHtml } from './utils.js';
 import { eventBus } from './eventBus.js';
 import { apiClient } from './apiClient.js';
 import { renderSongList } from './search.js';
@@ -220,10 +221,6 @@ export async function loadUserPlaylists() {
     });
     nav.appendChild(item);
   });
-}
-
-function escapeHtml(str) {
-  return String(str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
 export default { initLogin, renderUserCard, loadUserPlaylists };
