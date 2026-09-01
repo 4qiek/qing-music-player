@@ -1,0 +1,46 @@
+{
+  "name": "qing-player",
+  "version": "1.0.0",
+  "description": "清 - 灰白风本地与在线音乐播放器",
+  "main": "main.js",
+  "author": "Qing",
+  "license": "MIT",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder --win --x64"
+  },
+  "devDependencies": {
+    "electron": "^28.3.3",
+    "electron-builder": "^24.13.3"
+  },
+  "dependencies": {
+    "NeteaseCloudMusicApi": "^4.1.1"
+  },
+  "build": {
+    "appId": "com.qing.player",
+    "productName": "清",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "src/**/*",
+      "assets/**/*",
+      "node_modules/**/*"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "portable",
+          "arch": ["x64"]
+        }
+      ],
+      "icon": "assets/qing-icon.ico",
+      "artifactName": "清-音乐播放器-${version}.exe"
+    },
+    "portable": {
+      "artifactName": "清-音乐播放器-${version}.exe"
+    }
+  }
+}
