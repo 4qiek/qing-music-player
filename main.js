@@ -123,6 +123,60 @@ ipcMain.handle('netease:lyric', async (e, id) => {
   }
 });
 
+// ========== 通用元数据匹配（豆瓣 suggest：kind=book 书籍 / 其余影视） ==========
+ipcMain.handle('meta:suggest', async (e, keyword, kind) => {
+  try {
+    if (!keyword) return [];
+    const isBook = kind === 'book';
+    const base = isBook ? 'https://book.douban.com' : 'https://movie.douban.com';
+    const url = base + '/j/subject_suggest?q=' + encodeURIComponent(keyword);
+    const r = await httpGet(url, {
+      'Accept': 'application/json, text/plain, */*',
+      'Referer': base + '/',
+      'Accept-Language': 'zh-CN,zh;q=0.9'
+    });
+    if (r.status !== 200) return { error: 'HTTP ' + r.status };
+    const arr = JSON.parse(r.body || '[]');
+    return (Array.isArray(arr) ? arr : []).map(x => isBook ? ({
+      id: x.id, type: 'book', name: x.title || '', subTitle: '',
+      year: x.year || '', card: x.author_name || '', cover: x.pic || ''
+    }) : ({
+      id: x.id, type: x.type || 'movie', name: x.title || '', subTitle: x.sub_title || '',
+      year: x.year || '', card: x.sub_title || '', cover: x.img || x.cover_url || '', episode: x.episode || ''
+    }));
+  } catch (err) {
+    return { error: err.message };
+  }
+});
+
+// ========== 封面图片代理（绕过豆瓣等图床防盗链，返回 dataURL） ==========
+ipcMain.handle('meta:cover', async (e, imgUrl) => {
+  try {
+    if (!imgUrl || !/^https?:\/\//.test(imgUrl)) return { error: 'bad url' };
+    const fetchBuf = (u, redirects) => new Promise((resolve, reject) => {
+      const mod = u.startsWith('https') ? https : http;
+      const req = mod.get(u, { headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)', 'Referer': 'https://www.douban.com/' } }, (res) => {
+        if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location && redirects > 0) {
+          res.resume();
+          const next = new URL(res.headers.location, u).toString();
+          return resolve(fetchBuf(next, redirects - 1));
+        }
+        const chunks = [];
+        res.on('data', c => chunks.push(c));
+        res.on('end', () => resolve({ status: res.statusCode, type: res.headers['content-type'], buf: Buffer.concat(chunks) }));
+      });
+      req.on('error', reject);
+      req.setTimeout(10000, () => { req.destroy(); reject(new Error('timeout')); });
+    });
+    const r = await fetchBuf(imgUrl, 2);
+    if (r.status !== 200 || !r.buf || !r.buf.length) return { error: 'HTTP ' + r.status };
+    const mime = (r.type || 'image/jpeg').split(';')[0].trim();
+    return { dataUrl: 'data:' + mime + ';base64,' + r.buf.toString('base64') };
+  } catch (err) {
+    return { error: err.message };
+  }
+});
+
 ipcMain.handle('netease:login', async (e, { phone, password }) => {
   try {
     const res = await netease.login_cellphone({ phone, password });

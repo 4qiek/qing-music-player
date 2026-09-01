@@ -777,6 +777,24 @@ img { -webkit-user-drag: none; }
   letter-spacing: 0.5px;
 }
 
+/* 本地类列表（音乐/视频/书籍）最后一列是「本地+匹配+移除」操作区，加宽并取消胶囊背景 */
+#localList .song-row, #bookList .song-row, #videoList .song-row,
+#localList .song-list-header, #bookList .song-list-header, #videoList .song-list-header {
+  grid-template-columns: 36px 40px minmax(0,1fr) minmax(0,1fr) 68px 108px;
+}
+#localList .s-platform, #bookList .s-platform, #videoList .s-platform {
+  background: none;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 2px;
+  white-space: nowrap;
+}
+#localList .song-list-header span:last-child,
+#bookList .song-list-header span:last-child,
+#videoList .song-list-header span:last-child { text-align: right; }
+
 .empty-state { text-align: center; padding: 80px 20px; color: var(--text-2); }
 .empty-state .big-icon { font-size: 48px; margin-bottom: 16px; opacity: 0.3; }
 .empty-state p { font-size: 14px; margin-bottom: 16px; }
@@ -1739,6 +1757,17 @@ body.mini-mode .np-controls { gap: 6px; }
 .row-match.loading { opacity: 0.5; pointer-events: none; animation: matchPulse 1s ease-in-out infinite; }
 @keyframes matchPulse { 0%,100% { opacity: .35; } 50% { opacity: .9; } }
 .song-row.matched .s-artist { color: var(--text); }
+.row-tag {
+  margin-left: 8px;
+  font-size: 10px;
+  font-weight: 400;
+  color: var(--text-3);
+  background: var(--hover);
+  padding: 1px 6px;
+  border-radius: 4px;
+  vertical-align: middle;
+  letter-spacing: .3px;
+}
 
 .img-cell .img-del {
   position: absolute;

@@ -281,7 +281,8 @@
         </div>
         <div id="view-video" style="display:none;">
           <div class="content-header">
-            <div><h2>本地视频</h2><div class="sub">导入本地视频文件（MP4 / WebM 等），点击全屏播放</div></div>
+            <div><h2>本地视频</h2><div class="sub">导入本地视频文件（MP4 / WebM 等），点击全屏播放；可联网匹配片名、海报与信息</div></div>
+            <button class="btn" id="videoMatchAllBtn" title="按文件名自动匹配影片名、年份、导演主演与海报">☁ 匹配线上信息</button>
             <button class="btn btn-primary" id="videoImportBtn">+ 导入视频</button>
             <input type="file" id="videoFileInput" accept="video/*" multiple style="display:none;">
           </div>
@@ -297,7 +298,8 @@
         </div>
         <div id="view-book" style="display:none;">
           <div class="content-header">
-            <div><h2>书籍阅读</h2><div class="sub">导入 TXT / Markdown 文档，点击开始阅读</div></div>
+            <div><h2>书籍阅读</h2><div class="sub">导入 TXT / Markdown 文档，点击开始阅读；可联网匹配书名、作者与封面</div></div>
+            <button class="btn" id="bookMatchAllBtn" title="按文件名自动匹配书名、作者、年份与封面">☁ 匹配线上信息</button>
             <button class="btn btn-primary" id="bookImportBtn">+ 导入书籍</button>
             <input type="file" id="bookFileInput" accept=".txt,.md,.markdown,.text" multiple style="display:none;">
           </div>

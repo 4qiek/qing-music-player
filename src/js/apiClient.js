@@ -136,6 +136,12 @@ export const apiClient = {
     return withRetry(() => api.kugouUrl(hash, albumId), opts);
   },
 
+  // ========== 通用元数据（豆瓣：kind=book 书籍 / movie 影视） ==========
+  metaSuggest(keyword, kind = 'movie', opts = {}) {
+    const key = `cache:meta:suggest:${kind}:${keyword}`;
+    return cachedRequest(key, () => api.metaSuggest(keyword, kind), 'search', opts);
+  },
+
   // ========== 天气 ==========
   getWeather(city, opts = {}) {
     const target = city || '扬州';

@@ -20,6 +20,9 @@ contextBridge.exposeInMainWorld('qingAPI', {
   // 酷狗
   kugouSearch: (keyword) => ipcRenderer.invoke('kugou:search', keyword),
   kugouUrl: (hash, albumId) => ipcRenderer.invoke('kugou:url', hash, albumId),
+  // 通用元数据匹配（书籍/影视）
+  metaSuggest: (keyword, kind) => ipcRenderer.invoke('meta:suggest', keyword, kind),
+  metaCover: (url) => ipcRenderer.invoke('meta:cover', url),
   // 天气
   getWeather: (city) => ipcRenderer.invoke('weather:get', city),
   // 系统控制

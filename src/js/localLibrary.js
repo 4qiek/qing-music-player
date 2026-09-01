@@ -8,6 +8,7 @@ import { playLocal } from './player.js';
 import { apiClient } from './apiClient.js';
 import { eventBus } from './eventBus.js';
 import { sleep } from './utils.js';
+import { bindCoverFallback } from './metaMatch.js';
 
 const $ = (id) => document.getElementById(id);
 
@@ -136,7 +137,7 @@ export function renderLocalList() {
       </div>`;
     return;
   }
-  let html = '<div class="song-list-header"><span>#</span><span></span><span>标题</span><span>歌手</span><span style="text-align:right">时长</span><span>来源 / 操作</span></div>';
+  let html = '<div class="song-list-header"><span>#</span><span></span><span>标题</span><span>歌手</span><span style="text-align:right">时长</span><span>操作</span></div>';
   localTracks.forEach((t, i) => {
     const coverHtml = t.cover
       ? `<img class="s-cover" src="${t.cover}" alt="" loading="lazy" referrerpolicy="no-referrer">`
@@ -159,6 +160,7 @@ export function renderLocalList() {
     </div>`;
   });
   el.innerHTML = html;
+  bindCoverFallback(el, '#i-music');
   el.querySelectorAll('.song-row').forEach((row) =>
     row.addEventListener('click', () => playLocal(+row.dataset.idx))
   );
