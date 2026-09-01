@@ -22,6 +22,21 @@
   padding: 0 24px;
 }
 .wp-header .wp-city { font-size: 18px; font-weight: 600; }
+.wp-city-switch {
+  font-size: 12px;
+  padding: 3px 10px;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  background: var(--surface);
+  color: var(--text-2);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.wp-city-switch:hover {
+  background: var(--surface-strong);
+  color: var(--text);
+  border-color: var(--text-3);
+}
 
 .wp-body {
   flex: 1;

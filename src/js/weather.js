@@ -432,10 +432,7 @@ export function initWeather() {
     weatherPage.classList.remove('show');
   });
 
-  $('weatherWidget').addEventListener('dblclick', (e) => {
-    e.preventDefault();
-    openCityModal();
-  });
+  $('wpCitySwitch').addEventListener('click', () => openCityModal());
 
   loadWeather(savedCity);
 }

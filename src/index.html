@@ -387,7 +387,10 @@
 <!-- ===== 天气动画页面 ===== -->
 <div class="weather-page" id="weatherPage">
   <div class="wp-header">
-    <div class="wp-city" id="wpCity">扬州</div>
+    <div style="display:flex;align-items:center;gap:10px;">
+      <div class="wp-city" id="wpCity">扬州</div>
+      <button class="wp-city-switch" id="wpCitySwitch" aria-label="切换城市" type="button">切换</button>
+    </div>
     <button class="wp-close" id="wpClose" aria-label="关闭"><svg><use href="#i-close"/></svg></button>
   </div>
   <div class="wp-body">
