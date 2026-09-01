@@ -28,6 +28,9 @@ function buildBands(container, freqs, onInput) {
       const val = parseInt(slider.value, 10);
       const valEl = container.querySelector(`[data-val="${i}"]`);
       if (valEl) valEl.textContent = val > 0 ? '+' + val : val;
+      // 手动调整后，预设下拉显示「自定义」
+      const sel = $('eqPresets');
+      if (sel) sel.value = 'custom';
       onInput(i, val);
     });
   });
