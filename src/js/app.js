@@ -8,10 +8,10 @@ import { switchView, initNavigation } from './view.js';
 import * as player from './player.js';
 import { initSearch } from './search.js';
 import { initLocalLibrary, renderLocalList } from './localLibrary.js';
-import { initEq, initOpdEq } from './eq.js';
+import { initEq } from './eq.js';
 import { initWeather } from './weather.js';
 import { initLogin } from './login.js';
-import { initOtherPlayers } from './otherPlayers.js';
+import { initCityPoem } from './cityPoem.js';
 import {
   initTheme,
   initKeyboardShortcuts,
@@ -39,10 +39,9 @@ export function initApp() {
   initSearch();
   initLocalLibrary();
   initEq();
-  initOpdEq();
   initWeather();
+  initCityPoem();
   initLogin();
-  initOtherPlayers();
   player.initAudioEvents();
 
   // 4. 状态订阅：播放状态 → 通知

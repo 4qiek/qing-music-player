@@ -1,7 +1,6 @@
 /**
  * eq.js — 均衡器模块
- * 职责：主播放器 10 段 EQ 面板、预设、重置；
- *       其他播放器系统级 EQ（Equalizer APO）面板与安装引导。
+ * 职责：主播放器 10 段 EQ 面板、预设、重置。
  */
 import { store } from './store.js';
 import { eventBus } from './eventBus.js';
@@ -9,18 +8,6 @@ import { apiClient } from './apiClient.js';
 import { EQ_FREQS, EQ_PRESETS, initAudioCtx, setEqGain } from './audioEngine.js';
 
 const $ = (id) => document.getElementById(id);
-
-export const OPD_EQ_FREQS = [31, 62, 125, 250, 500, 1000, 2000, 4000, 8000, 16000];
-export const OPD_EQ_PRESETS = {
-  flat: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-  pop: [-1, 2, 4, 4, 2, 0, -1, -1, 2, 3],
-  rock: [5, 4, 3, 1, -1, -1, 2, 4, 5, 5],
-  jazz: [3, 2, 1, 2, -1, -1, 0, 2, 3, 4],
-  classical: [4, 3, 2, 1, -1, -1, 0, 2, 3, 4],
-  vocal: [-2, -1, 0, 2, 4, 4, 3, 2, 0, -1],
-  bass: [6, 5, 4, 3, 1, 0, 0, 0, 0, 0],
-  treble: [0, 0, 0, 0, 0, 1, 3, 5, 6, 7]
-};
 
 function freqLabel(f) {
   return f >= 1000 ? f / 1000 + 'k' : String(f);
@@ -89,75 +76,4 @@ export function initEq() {
   });
 }
 
-// ===== 其他播放器系统 EQ =====
-export function initOpdEq() {
-  const bands = $('opdEqBands');
-  buildBands(bands, OPD_EQ_FREQS, (i, val) => {
-    const values = [...store.get('opdEqValues')];
-    values[i] = val;
-    store.set('opdEqValues', values);
-    applyOpdEq();
-  });
-
-  $('opdEqBtn').addEventListener('click', () => {
-    $('opdEqPanel').classList.toggle('show');
-  });
-
-  $('opdEqPresets').addEventListener('change', (e) => {
-    const preset = OPD_EQ_PRESETS[e.target.value];
-    if (preset) {
-      store.set('opdEqValues', [...preset]);
-      setBandValues(bands, preset);
-      applyOpdEq();
-    }
-  });
-
-  $('opdInstallEqBtn').addEventListener('click', installSystemEq);
-
-  checkSystemEq();
-}
-
-function applyOpdEq() {
-  if (apiClient.applySystemEq) {
-    apiClient.applySystemEq(store.get('opdEqValues')).then((r) => {
-      if (r && r.error) console.log('系统EQ:', r.error);
-    });
-  }
-}
-
-async function checkSystemEq() {
-  if (!apiClient.checkEqAvailable) return;
-  try {
-    const r = await apiClient.checkEqAvailable();
-    store.set('systemEqAvailable', !!(r && r.available));
-    const notice = $('opdEqInstallNotice');
-    if (notice) notice.style.display = store.get('systemEqAvailable') ? 'none' : 'block';
-  } catch (e) { /* ignore */ }
-}
-
-async function installSystemEq() {
-  const btn = $('opdInstallEqBtn');
-  const status = $('opdEqInstallStatus');
-  btn.disabled = true;
-  btn.textContent = '安装中...';
-  status.textContent = '正在下载 Equalizer APO 安装包...';
-  try {
-    const result = await apiClient.installSystemEq();
-    if (result.error) {
-      status.textContent = '安装失败: ' + result.error;
-      btn.disabled = false;
-      btn.textContent = '重试安装';
-    } else {
-      status.textContent = '安装成功！系统级EQ已启用。';
-      $('opdEqInstallNotice').style.display = 'none';
-      store.set('systemEqAvailable', true);
-      applyOpdEq();
-    }
-  } catch (err) {
-    status.textContent = '安装出错: ' + err.message;
-    btn.disabled = false;
-    btn.textContent = '重试安装';
-  }
-}
-
-export default { initEq, initOpdEq, OPD_EQ_FREQS, OPD_EQ_PRESETS };
+export default { initEq };

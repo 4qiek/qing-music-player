@@ -70,12 +70,13 @@
     <div class="nav-section" id="playlistSection" style="display:none;">我的歌单</div>
     <div id="playlistNav"></div>
 
-    <div class="other-players" id="otherPlayers">
-      <div class="op-title" title="检测系统中正在运行的其他音乐播放器（网易云/QQ/酷狗等），并非本应用播放状态">
-        <span>系统其他播放器</span>
-        <span class="op-refresh" id="opRefresh" role="button" tabindex="0">刷新</span>
+    <div class="city-poem" id="cityPoem" title="根据当前城市随机展示相关诗句，点击「换」可换一句">
+      <div class="cp-head">
+        <span class="cp-city" id="cpCity">扬州</span>
+        <span class="cp-shuffle" id="cpShuffle" role="button" tabindex="0" aria-label="换一句诗句">换</span>
       </div>
-      <div id="opList"><div class="op-empty">检测中...</div></div>
+      <div class="cp-text" id="cpText"></div>
+      <div class="cp-from" id="cpFrom"></div>
     </div>
 
     <div class="user-card" id="userCard">
@@ -252,73 +253,6 @@
       <button class="ctrl-btn play-btn" id="pdPlayBtn" aria-label="播放或暂停"><svg><use href="#i-play"/></svg></button>
       <button class="ctrl-btn" id="pdNextBtn" aria-label="下一曲"><svg><use href="#i-next"/></svg></button>
     </div>
-  </div>
-</div>
-
-<!-- ===== 其他播放器详情页 ===== -->
-<div class="player-detail" id="otherPlayerDetail">
-  <div class="pd-bg" id="opdBg"></div>
-  <div class="pd-header">
-    <button class="pd-close" id="opdClose" aria-label="关闭"><svg><use href="#i-close"/></svg></button>
-    <div class="pd-source" id="opdSource">--</div>
-  </div>
-  <div class="pd-body">
-    <div class="pd-left">
-      <div class="pd-cover-wrap">
-        <div style="width:300px;height:300px;position:relative;">
-          <img class="pd-cover" id="opdCover" src="" alt="" loading="lazy" style="display:none;">
-          <div class="pd-cover-placeholder" id="opdCoverPlaceholder">
-            <svg style="width:72px;height:72px;opacity:0.35"><use href="#i-music"/></svg>
-          </div>
-        </div>
-      </div>
-      <div class="pd-song-info">
-        <div class="pd-song-name" id="opdSongName">未播放</div>
-        <div class="pd-song-artist" id="opdSongArtist">--</div>
-      </div>
-      <div class="pd-progress">
-        <span id="opdCurTime">0:00</span>
-        <div class="progress-bar" id="opdProgressBar"><div class="progress-fill" id="opdProgressFill"></div></div>
-        <span id="opdTotalTime">0:00</span>
-      </div>
-      <div class="controls">
-        <button class="ctrl-btn" id="opdPrevBtn" aria-label="上一曲"><svg><use href="#i-prev"/></svg></button>
-        <button class="ctrl-btn play-btn" id="opdPlayBtn" aria-label="播放或暂停"><svg><use href="#i-play"/></svg></button>
-        <button class="ctrl-btn" id="opdNextBtn" aria-label="下一曲"><svg><use href="#i-next"/></svg></button>
-      </div>
-      <div class="pd-extra">
-        <button class="btn btn-ghost" id="opdEqBtn"><svg><use href="#i-eq"/></svg> 均衡器</button>
-      </div>
-    </div>
-    <div class="pd-right">
-      <div class="lyrics-container" id="opdLyrics">
-        <div class="lyrics-placeholder">暂无歌词</div>
-      </div>
-    </div>
-  </div>
-  <!-- 系统 EQ 面板 -->
-  <div class="eq-panel" id="opdEqPanel" style="position:fixed;right:0;top:0;bottom:0;width:min(340px,80%);">
-    <div class="eq-header">
-      <span>十段均衡器</span>
-      <div class="eq-presets" style="margin-top:0;">
-        <select id="opdEqPresets" aria-label="EQ 预设">
-          <option value="flat">平直</option>
-          <option value="pop">流行</option>
-          <option value="rock">摇滚</option>
-          <option value="jazz">爵士</option>
-          <option value="classical">古典</option>
-          <option value="vocal">人声</option>
-          <option value="bass">重低音</option>
-          <option value="treble">高音增强</option>
-        </select>
-      </div>
-    </div>
-    <div id="opdEqInstallNotice" style="display:none;">
-      <div>系统级EQ未安装，调节滑块暂不会影响其他播放器的声音。</div>
-      <button class="btn btn-primary" id="opdInstallEqBtn" style="font-size:12px;padding:6px 16px;">一键安装 Equalizer APO</button>
-      <div id="opdEqInstallStatus" style="margin-top:8px;font-size:11px;color:#999;"></div>
-    </div>
-    <div class="eq-bands" id="opdEqBands"></div>
   </div>
 </div>
 

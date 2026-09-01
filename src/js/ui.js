@@ -143,7 +143,6 @@ export function initKeyboardShortcuts() {
       case 'Escape':
         // 关闭浮层
         $('playerDetail').classList.remove('show');
-        $('otherPlayerDetail').classList.remove('show');
         $('weatherPage').classList.remove('show');
         break;
     }
