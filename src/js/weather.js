@@ -1,12 +1,14 @@
 /**
  * weather.js — 天气模块
- * 负责天气拉取、城市→省份映射、省份地标背景渲染、天气动画场景。
+ * 负责天气拉取、城市→省份映射、省份地标背景渲染、天气动画场景、城市切换模态框、3日预报、雨雪粒子系统。
  */
 import { store } from './store.js';
 import { eventBus } from './eventBus.js';
 import { apiClient } from './apiClient.js';
 
 const $ = (id) => document.getElementById(id);
+const CITY_STORAGE_KEY = 'qing:weatherCity';
+const HOT_CITIES = ['北京', '上海', '广州', '深圳', '杭州', '成都', '重庆', '武汉', '南京'];
 
 // 城市→省份映射
 const CITY_PROVINCE = {
@@ -153,22 +155,122 @@ function getProvince(city) {
   return CITY_PROVINCE[city] || null;
 }
 
+function getSavedCity() {
+  try { return localStorage.getItem(CITY_STORAGE_KEY) || '扬州'; }
+  catch { return '扬州'; }
+}
+function saveCity(city) {
+  try { localStorage.setItem(CITY_STORAGE_KEY, city); } catch {}
+}
+
+function weekdayOf(dateStr) {
+  if (!dateStr) return '';
+  const d = new Date(dateStr + 'T00:00:00');
+  const names = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
+  return names[d.getDay()];
+}
+
 export async function loadWeather(city) {
-  const w = await apiClient.getWeather(city || '扬州');
+  const target = city || getSavedCity();
+  const w = await apiClient.getWeather(target);
   if (!w || w.error || w.temp == null) {
     $('wTemp').textContent = '--°';
     $('wDesc').textContent = '天气获取失败';
     return;
   }
+  saveCity(w.city || target);
   store.set('currentWeather', w);
   $('wTemp').textContent = w.temp + '°';
-  $('wCity').textContent = w.city || city || '';
+  $('wCity').textContent = w.city || target;
   $('wDesc').textContent = w.desc
     ? `${w.desc}${(w.todayLow != null && w.todayHigh != null) ? ' ' + w.todayLow + '°~' + w.todayHigh + '°' : ''}`
     : '';
 }
 
+/* ========== 雨雪 Canvas 粒子系统 ========== */
+let particleRaf = null;
+function stopParticles() {
+  if (particleRaf) { cancelAnimationFrame(particleRaf); particleRaf = null; }
+}
+function startParticles(scene, type) {
+  stopParticles();
+  const canvas = document.createElement('canvas');
+  canvas.className = 'particle-canvas';
+  const rect = scene.getBoundingClientRect();
+  const dpr = window.devicePixelRatio || 1;
+  canvas.width = rect.width * dpr;
+  canvas.height = rect.height * dpr;
+  canvas.style.width = rect.width + 'px';
+  canvas.style.height = rect.height + 'px';
+  scene.appendChild(canvas);
+  const ctx = canvas.getContext('2d');
+  ctx.scale(dpr, dpr);
+  const W = rect.width, H = rect.height;
+  const count = 150 + Math.floor(Math.random() * 50);
+  const particles = [];
+  if (type === 'rain') {
+    for (let i = 0; i < count; i++) {
+      particles.push({
+        x: Math.random() * W,
+        y: Math.random() * H,
+        len: 12 + Math.random() * 10,
+        speed: 8 + Math.random() * 6,
+        opacity: 0.3 + Math.random() * 0.5
+      });
+    }
+  } else {
+    for (let i = 0; i < count; i++) {
+      particles.push({
+        x: Math.random() * W,
+        y: Math.random() * H,
+        r: 1.5 + Math.random() * 2.5,
+        speed: 1 + Math.random() * 1.5,
+        drift: (Math.random() - 0.5) * 1.2,
+        angle: Math.random() * Math.PI * 2,
+        spin: (Math.random() - 0.5) * 0.05,
+        opacity: 0.5 + Math.random() * 0.5
+      });
+    }
+  }
+  function frame() {
+    ctx.clearRect(0, 0, W, H);
+    if (type === 'rain') {
+      ctx.strokeStyle = 'rgba(120,160,220,0.7)';
+      ctx.lineWidth = 1.5;
+      ctx.lineCap = 'round';
+      for (const p of particles) {
+        ctx.globalAlpha = p.opacity;
+        ctx.beginPath();
+        ctx.moveTo(p.x, p.y);
+        ctx.lineTo(p.x - 1, p.y + p.len);
+        ctx.stroke();
+        p.y += p.speed;
+        p.x -= 0.5;
+        if (p.y > H) { p.y = -p.len; p.x = Math.random() * W; }
+      }
+    } else {
+      ctx.fillStyle = '#fff';
+      for (const p of particles) {
+        ctx.globalAlpha = p.opacity;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+        ctx.fill();
+        p.y += p.speed;
+        p.x += p.drift + Math.sin(p.angle) * 0.5;
+        p.angle += p.spin;
+        if (p.y > H) { p.y = -5; p.x = Math.random() * W; }
+        if (p.x > W) p.x = 0;
+        if (p.x < 0) p.x = W;
+      }
+    }
+    ctx.globalAlpha = 1;
+    particleRaf = requestAnimationFrame(frame);
+  }
+  frame();
+}
+
 export function renderWeatherScene() {
+  stopParticles();
   const scene = $('wpScene');
   const landmarksEl = $('wpLandmarks');
   const provinceLabel = $('wpProvinceLabel');
@@ -191,31 +293,29 @@ export function renderWeatherScene() {
   }
 
   const desc = currentWeather.desc || '';
-  let html = '';
+  const descLower = desc.toLowerCase();
+  const isRain = desc.includes('雷') || desc.includes('雨') || descLower.includes('rain') || descLower.includes('thunder') || descLower.includes('drizzle') || descLower.includes('shower');
+  const isSnow = desc.includes('雪') || descLower.includes('snow') || descLower.includes('sleet');
+  const cloudSvg = (cls) => `<div class="doodle-cloud ${cls || 'cloud-float'}">
+      <div class="cloud-body c1"></div><div class="cloud-body c2"></div><div class="cloud-body c3"></div>
+    </div>`;
   const sunSvg = () => `<div class="doodle-sun">
       <div class="sun-core"></div>
       ${Array.from({ length: 8 }, (_, i) => `<div class="sun-ray" style="transform:rotate(${i * 45}deg);animation-delay:${i * 0.1}s;"></div>`).join('')}
     </div>`;
-  const cloudSvg = (cls) => `<div class="doodle-cloud ${cls || 'cloud-float'}">
-      <div class="cloud-body c1"></div><div class="cloud-body c2"></div><div class="cloud-body c3"></div>
-    </div>`;
 
-  if (desc.includes('雷')) {
+  let html = '';
+  let particleType = null;
+  if (desc.includes('雷') || descLower.includes('thunder')) {
     html = cloudSvg('cloud-float') + '<div class="doodle-lightning" style="top:110px;left:140px;">⚡</div>';
-    for (let i = 0; i < 8; i++) {
-      html += `<div class="doodle-rain" style="left:${60 + i * 25}px;top:120px;animation-delay:${i * 0.15}s;"></div>`;
-    }
-  } else if (desc.includes('雪')) {
+    particleType = 'rain';
+  } else if (isSnow) {
     html = cloudSvg('cloud-float');
-    for (let i = 0; i < 10; i++) {
-      html += `<div class="doodle-snow" style="left:${50 + i * 22}px;top:110px;animation-delay:${i * 0.3}s;">❄</div>`;
-    }
-  } else if (desc.includes('雨')) {
+    particleType = 'snow';
+  } else if (isRain) {
     html = cloudSvg('cloud-float');
-    for (let i = 0; i < 10; i++) {
-      html += `<div class="doodle-rain" style="left:${50 + i * 22}px;top:120px;animation-delay:${i * 0.12}s;"></div>`;
-    }
-  } else if (desc.includes('多云') || desc.includes('转晴')) {
+    particleType = 'rain';
+  } else if (desc.includes('多云') || desc.includes('转晴') || descLower.includes('cloud') || descLower.includes('partly')) {
     html = `<div class="scene-partly" style="position:relative;width:200px;height:160px;">
       <div class="doodle-sun">
         <div class="sun-core"></div>
@@ -223,7 +323,7 @@ export function renderWeatherScene() {
       </div>
       ${cloudSvg('cloud-float')}
     </div>`;
-  } else if (desc.includes('阴')) {
+  } else if (desc.includes('阴') || descLower.includes('overcast') || descLower.includes('cloudy')) {
     html = `<div class="doodle-cloud cloud-float" style="position:absolute;top:30px;left:20px;">
       <div class="cloud-body c1"></div><div class="cloud-body c2"></div><div class="cloud-body c3"></div>
     </div>
@@ -233,31 +333,111 @@ export function renderWeatherScene() {
   } else {
     html = sunSvg();
   }
-
   scene.innerHTML = html;
+  if (particleType) {
+    // 等一帧让云朵 div 布局完成再创建 Canvas
+    requestAnimationFrame(() => startParticles(scene, particleType));
+  }
+
   $('wpCity').textContent = currentWeather.city;
   $('wpTemp').textContent = currentWeather.temp + '°';
   $('wpDesc').textContent = currentWeather.desc;
   $('wpRange').textContent = `${currentWeather.todayLow}° ~ ${currentWeather.todayHigh}°  湿度 ${currentWeather.humidity}%`;
+
+  // 3日预报
+  renderForecast(currentWeather.forecast);
+}
+
+function renderForecast(forecast) {
+  let container = $('wpForecast');
+  if (!container) {
+    container = document.createElement('div');
+    container.id = 'wpForecast';
+    container.className = 'wp-forecast';
+    $('wpRange').after(container);
+  }
+  if (!Array.isArray(forecast) || forecast.length === 0) {
+    container.innerHTML = '';
+    return;
+  }
+  container.innerHTML = forecast.slice(0, 3).map((d, i) => {
+    const label = i === 0 ? '今天' : weekdayOf(d.date);
+    const icon = d.desc || '--';
+    return `<div class="fc-card">
+      <div class="fc-day">${label}</div>
+      <div class="fc-icon">${icon}</div>
+      <div class="fc-temp"><span class="fc-high">${d.maxTemp}°</span> / <span class="fc-low">${d.minTemp}°</span></div>
+    </div>`;
+  }).join('');
+}
+
+/* ========== 城市切换模态框 ========== */
+let cityModal = null;
+function openCityModal() {
+  if (cityModal) { cityModal.classList.add('show'); return; }
+  const overlay = document.createElement('div');
+  overlay.className = 'city-modal-overlay';
+  overlay.innerHTML = `
+    <div class="city-modal" role="dialog" aria-label="切换城市">
+      <div class="cm-title">切换城市</div>
+      <div class="cm-search">
+        <input type="text" id="cmInput" placeholder="输入城市名，回车确认" aria-label="输入城市名">
+      </div>
+      <div class="cm-hot-label">热门城市</div>
+      <div class="cm-hot-grid" id="cmHotGrid"></div>
+      <button class="cm-close" id="cmClose" aria-label="关闭">×</button>
+    </div>`;
+  document.body.appendChild(overlay);
+  cityModal = overlay;
+  const grid = $('cmHotGrid');
+  HOT_CITIES.forEach(c => {
+    const btn = document.createElement('button');
+    btn.className = 'cm-city-btn';
+    btn.type = 'button';
+    btn.textContent = c;
+    btn.addEventListener('click', () => selectCity(c));
+    grid.appendChild(btn);
+  });
+  $('cmClose').addEventListener('click', closeCityModal);
+  overlay.addEventListener('click', (e) => { if (e.target === overlay) closeCityModal(); });
+  const input = $('cmInput');
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') { const v = input.value.trim(); if (v) selectCity(v); }
+    if (e.key === 'Escape') closeCityModal();
+  });
+  requestAnimationFrame(() => { overlay.classList.add('show'); input.focus(); });
+}
+function closeCityModal() {
+  if (!cityModal) return;
+  cityModal.classList.remove('show');
+  setTimeout(() => { if (cityModal) { cityModal.remove(); cityModal = null; } }, 250);
+}
+function selectCity(city) {
+  closeCityModal();
+  loadWeather(city);
 }
 
 export function initWeather() {
   const weatherPage = $('weatherPage');
+  const savedCity = getSavedCity();
 
   $('weatherWidget').addEventListener('click', async () => {
-    if (!store.get('currentWeather')) await loadWeather('扬州');
+    if (!store.get('currentWeather')) await loadWeather(savedCity);
     renderWeatherScene();
     weatherPage.classList.add('show');
   });
 
-  $('wpClose').addEventListener('click', () => weatherPage.classList.remove('show'));
-
-  $('weatherWidget').addEventListener('dblclick', () => {
-    const city = prompt('输入城市名称：', '扬州');
-    if (city) loadWeather(city);
+  $('wpClose').addEventListener('click', () => {
+    stopParticles();
+    weatherPage.classList.remove('show');
   });
 
-  loadWeather('扬州');
+  $('weatherWidget').addEventListener('dblclick', (e) => {
+    e.preventDefault();
+    openCityModal();
+  });
+
+  loadWeather(savedCity);
 }
 
 export default { initWeather, loadWeather, renderWeatherScene };

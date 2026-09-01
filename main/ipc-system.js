@@ -177,11 +177,18 @@ module.exports = function initSystemIpc(state) {
       const data = JSON.parse(res.body);
       const current = data?.current_condition?.[0];
       const today = data?.weather?.[0];
+      const forecast = (data?.weather || []).slice(0, 3).map(d => ({
+        date: d.date,
+        maxTemp: d.maxtempC,
+        minTemp: d.mintempC,
+        desc: d?.hourly?.[4]?.lang_zh?.[0]?.value || d?.hourly?.[4]?.weatherDesc?.[0]?.value || ''
+      }));
       return {
         city: targetCity, temp: current?.temp_C, feelsLike: current?.FeelsLikeC,
         desc: current?.lang_zh?.[0]?.value || current?.weatherDesc?.[0]?.value,
         humidity: current?.humidity, wind: current?.windspeedKmph, icon: current?.weatherCode,
-        todayHigh: today?.maxtempC, todayLow: today?.mintempC, date: today?.date
+        todayHigh: today?.maxtempC, todayLow: today?.mintempC, date: today?.date,
+        forecast
       };
     } catch (err) { return { error: err.message }; }
   });

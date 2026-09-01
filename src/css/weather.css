@@ -198,3 +198,141 @@
   letter-spacing: 4px;
   opacity: 0.5;
 }
+
+/* ==========================================================================
+   3日预报卡片
+   ========================================================================== */
+.wp-forecast {
+  display: flex;
+  gap: 12px;
+  margin-top: 16px;
+  justify-content: center;
+}
+.fc-card {
+  background: var(--surface);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 10px 16px;
+  min-width: 80px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+.fc-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-sm); }
+.fc-day { font-size: 12px; color: var(--text-2); font-weight: 500; }
+.fc-icon { font-size: 13px; color: var(--text); }
+.fc-temp { font-size: 12px; color: var(--text-2); }
+.fc-high { color: var(--text); font-weight: 600; }
+.fc-low { opacity: 0.7; }
+
+/* ==========================================================================
+   雨雪粒子 Canvas
+   ========================================================================== */
+.particle-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 1;
+}
+.wp-scene > .doodle-cloud,
+.wp-scene > .doodle-sun,
+.wp-scene > .doodle-lightning,
+.wp-scene > .scene-partly {
+  position: relative;
+  z-index: 2;
+}
+
+/* ==========================================================================
+   城市切换模态框（毛玻璃）
+   ========================================================================== */
+.city-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 500;
+  background: rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease;
+}
+.city-modal-overlay.show { opacity: 1; pointer-events: auto; }
+.city-modal {
+  background: var(--surface-strong);
+  backdrop-filter: blur(30px);
+  -webkit-backdrop-filter: blur(30px);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  padding: 24px;
+  width: 360px;
+  max-width: 90vw;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
+  position: relative;
+  transform: translateY(10px) scale(0.97);
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.city-modal-overlay.show .city-modal { transform: translateY(0) scale(1); }
+.cm-title { font-size: 17px; font-weight: 600; margin-bottom: 16px; }
+.cm-search input {
+  width: 100%;
+  height: 38px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 0 12px;
+  font-size: 14px;
+  background: var(--surface);
+  color: var(--text);
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  box-sizing: border-box;
+}
+.cm-search input:focus { border-color: var(--accent, #888); box-shadow: 0 0 0 3px rgba(120,120,120,0.12); }
+.cm-hot-label { font-size: 12px; color: var(--text-2); margin: 16px 0 10px; }
+.cm-hot-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.cm-city-btn {
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  border-radius: 8px;
+  padding: 6px 14px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+.cm-city-btn:hover {
+  background: var(--surface-strong);
+  border-color: var(--text-3);
+  transform: translateY(-1px);
+}
+.cm-close {
+  position: absolute;
+  top: 12px;
+  right: 14px;
+  width: 28px;
+  height: 28px;
+  border: none;
+  background: transparent;
+  color: var(--text-2);
+  font-size: 20px;
+  cursor: pointer;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s;
+}
+.cm-close:hover { background: var(--surface); color: var(--text); }
