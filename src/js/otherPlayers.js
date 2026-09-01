@@ -100,7 +100,7 @@ function renderSmtcList(list) {
   const el = $('opList');
   const displayList = list || store.get('smtcSessions');
   if (!displayList || displayList.length === 0) {
-    el.innerHTML = '<div class="op-empty">暂无播放中的应用</div>';
+    el.innerHTML = '<div class="op-empty">未检测到正在播放的应用<br><span style="font-size:10px">打开网易云/QQ/酷狗等即可在此控制</span></div>';
     return;
   }
   el.innerHTML = displayList.map((s, i) => {
@@ -144,7 +144,7 @@ function openOtherPlayerDetail(index, list) {
     loadOpdLyrics();
     startOpdPolling();
   } else {
-    $('opdLyrics').innerHTML = '<div class="lyrics-placeholder">应用未在播放，点击播放按钮开始</div>';
+    $('opdLyrics').innerHTML = '<div class="lyrics-placeholder"><svg style="width:40px;height:40px;opacity:0.3;margin-bottom:12px"><use href="#i-music"/></svg><br>应用尚未开始播放<br><span style="font-size:12px;opacity:0.7">点击播放键让它播放起来吧</span></div>';
   }
 }
 
@@ -154,22 +154,21 @@ function updateOpdDisplay() {
   const appName = s.isProcessOnly ? s.processName : getAppName(s.appId);
   $('opdSource').textContent = appName;
   $('opdSongName').textContent = s.title || (s.isProcessOnly ? appName : '未知歌曲');
-  $('opdSongArtist').textContent = s.artist || (s.isProcessOnly ? '未在播放' : '未知艺术家');
+  $('opdSongArtist').textContent = s.artist || (s.isProcessOnly ? '点击播放键开始' : '暂无艺术家信息');
 
   const coverImg = $('opdCover');
-  const vinyl = $('opdVinyl');
+  const coverPh = $('opdCoverPlaceholder');
   if (s.cover) {
     coverImg.src = 'file:///' + s.cover.replace(/\\/g, '/');
     coverImg.style.display = 'block';
-    vinyl.style.display = 'none';
+    coverPh.style.display = 'none';
   } else {
     coverImg.style.display = 'none';
-    vinyl.style.display = 'block';
+    coverPh.style.display = 'flex';
   }
 
   const isPlaying = s.status === 'Playing';
   $('opdPlayBtn').innerHTML = `<svg><use href="#${isPlaying ? 'i-pause' : 'i-play'}"/></svg>`;
-  vinyl.classList.toggle('paused', !isPlaying);
 
   const pos = s.position || 0;
   const dur = s.duration || 0;

@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>清 · 音乐播放器</title>
-<link rel="stylesheet" href="../css/style.css">
-<link rel="stylesheet" href="../css/weather.css">
+<link rel="stylesheet" href="./css/style.css">
+<link rel="stylesheet" href="./css/weather.css">
 </head>
 <body>
 
@@ -72,8 +72,8 @@
     <div id="playlistNav"></div>
 
     <div class="other-players" id="otherPlayers">
-      <div class="op-title">
-        <span>正在播放</span>
+      <div class="op-title" title="检测系统中正在运行的其他音乐播放器（网易云/QQ/酷狗等），并非本应用播放状态">
+        <span>系统其他播放器</span>
         <span class="op-refresh" id="opRefresh" role="button" tabindex="0">刷新</span>
       </div>
       <div id="opList"><div class="op-empty">检测中...</div></div>
@@ -268,7 +268,9 @@
       <div class="pd-cover-wrap">
         <div style="width:300px;height:300px;position:relative;">
           <img class="pd-cover" id="opdCover" src="" alt="" loading="lazy" style="display:none;">
-          <div class="vinyl rotate paused" id="opdVinyl" style="width:300px;height:300px;"></div>
+          <div class="pd-cover-placeholder" id="opdCoverPlaceholder">
+            <svg style="width:72px;height:72px;opacity:0.35"><use href="#i-music"/></svg>
+          </div>
         </div>
       </div>
       <div class="pd-song-info">
