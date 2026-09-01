@@ -177,12 +177,12 @@ async function playOnlineFromQueue(idx) {
   try {
     if (t.platform === 'netease') urlRes = await apiClient.neteaseUrl({ id: t.id, level: store.get('quality') });
     else if (t.platform === 'qq') urlRes = await apiClient.qqUrl(t.id);
-    else urlRes = await apiClient.kugouUrl(t.id);
+    else urlRes = await apiClient.kugouUrl(t.id, t.albumId);
   } catch (err) {
     urlRes = { error: err.message };
   }
   if (urlRes.error || !urlRes.url) {
-    setNowPlaying(t, `暂无法播放（${PLATFORM_NAME[t.platform] || t.platform}接口限制）`);
+    setNowPlaying(t, `暂无法播放：${urlRes.error || '接口暂不可用'}`);
     return;
   }
   t.url = urlRes.url;
@@ -200,12 +200,12 @@ export async function playOnline(idx) {
   try {
     if (t.platform === 'netease') urlRes = await apiClient.neteaseUrl({ id: t.id, level: store.get('quality') });
     else if (t.platform === 'qq') urlRes = await apiClient.qqUrl(t.id);
-    else urlRes = await apiClient.kugouUrl(t.id);
+    else urlRes = await apiClient.kugouUrl(t.id, t.albumId);
   } catch (err) {
     urlRes = { error: err.message };
   }
   if (urlRes.error || !urlRes.url) {
-    setNowPlaying(t, `暂无法播放（${PLATFORM_NAME[t.platform] || t.platform}接口限制）`);
+    setNowPlaying(t, `暂无法播放：${urlRes.error || '接口暂不可用'}`);
     return;
   }
   t.url = urlRes.url;

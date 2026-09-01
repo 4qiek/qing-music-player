@@ -186,27 +186,46 @@ ipcMain.handle('qq:search', async (e, keyword) => {
 });
 
 ipcMain.handle('qq:url', async (e, songmid) => {
+  // 参考开源方案：同一首歌按多个音质候选依次请求 vkey（C400.m4a→M500/M800/M320.mp3），
+  // 取第一个能返回播放地址的，显著提高"很多歌放不出来"的问题
   try {
     const guid = Math.floor(Math.random() * 10000000000).toString();
+    const filenames = [
+      `C400${songmid}.m4a`,
+      `M500${songmid}.mp3`,
+      `M800${songmid}.mp3`,
+      `M320${songmid}.mp3`,
+      `C200${songmid}.m4a`
+    ];
     const data = JSON.stringify({
       req: { module: 'CDN.SrfCdnDispatchServer', method: 'GetCdnDispatch', param: { guid, calltype: 0, userip: '' } },
-      req_0: { module: 'vkey.GetVkeyServer', method: 'CgiGetVkey', param: { guid, songmid: [songmid], songtype: [0], uin: '0', loginflag: 1, platform: '20' } }
+      req_0: { module: 'vkey.GetVkeyServer', method: 'CgiGetVkey',
+        param: { guid, songmid: filenames.map(() => songmid), filename: filenames, songtype: filenames.map(() => 0), uin: '0', loginflag: 1, platform: '20' } }
     });
     const url = `https://u.y.qq.com/cgi-bin/musicu.fcg?data=${encodeURIComponent(data)}`;
-    const res = await httpGet(url, { Referer: 'https://y.qq.com/' });
+    const res = await httpGet(url, {
+      Referer: 'https://y.qq.com/',
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+    });
     const body = JSON.parse(res.body);
-    const vkey = body?.req_0?.data?.midurlinfo?.[0]?.vkey;
-    const sip = body?.req?.data?.sip?.[0] || 'https://dl.stream.qqmusic.qq.com/';
-    const filename = `C400${songmid}.m4a`;
-    if (vkey) {
-      return { url: `${sip}${filename}?vkey=${vkey}&guid=${guid}&uin=0&fromtag=66` };
+    const infos = body?.req_0?.data?.midurlinfo || [];
+    const streamHost = 'https://dl.stream.qqmusic.qq.com/';
+    for (let i = 0; i < infos.length; i++) {
+      const info = infos[i] || {};
+      if (info.purl) return { url: `${streamHost}${info.purl}` };
+      if (info.vkey) return { url: `${streamHost}${filenames[i]}?vkey=${info.vkey}&guid=${guid}&uin=0&fromtag=66` };
     }
-    return { error: '无法获取播放地址' };
+    // 备用接口：音乐馆移动端 express 接口
+    const altUrl = `https://c.y.qq.com/base/fcgi-bin/fcg_music_express_mobile3.fcg?format=json&platform=yqq&cid=205361747&uin=0&songmid=${songmid}&filename=${filenames[0]}&guid=${guid}`;
+    const res2 = await httpGet(altUrl, { Referer: 'https://y.qq.com/' });
+    const b2 = JSON.parse(res2.body);
+    const vkey2 = b2?.data?.items?.[0]?.vkey;
+    if (vkey2) return { url: `https://dl.stream.qqmusic.qq.com/${filenames[0]}?vkey=${vkey2}&guid=${guid}&uin=0&fromtag=66` };
+    return { error: '该歌曲为 VIP 专属或受版权保护，暂无法免费播放' };
   } catch (err) {
     return { error: err.message };
   }
 });
-
 // ========== 酷狗音乐 ==========
 ipcMain.handle('kugou:search', async (e, keyword) => {
   try {
@@ -219,6 +238,7 @@ ipcMain.handle('kugou:search', async (e, keyword) => {
       name: s.SongName,
       artist: s.SingerName,
       album: s.AlbumName || '',
+      albumId: s.AlbumID || '',
       cover: s.Img || (s.AlbumID ? `https://albumcover.kugou.com/albumcover/${s.AlbumID}.jpg` : ''),
       duration: s.Duration,
       platform: 'kugou'
@@ -228,20 +248,27 @@ ipcMain.handle('kugou:search', async (e, keyword) => {
   }
 });
 
-ipcMain.handle('kugou:url', async (e, hash) => {
+ipcMain.handle('kugou:url', async (e, hash, albumId) => {
+  // 实测结论：wwwapi.getdata 需复杂参数且常被限制，m.kugou 手机端接口更稳 → 作为主通道
+  const tryGet = async (u) => {
+    try { const r = await httpGet(u, { Referer: 'https://www.kugou.com/' }); return JSON.parse(r.body); } catch { return null; }
+  };
   try {
-    const url = `https://wwwapi.kugou.com/yy/index.php?r=play/getdata&hash=${hash}&platid=4&album_id=`;
-    const res = await httpGet(url, { Referer: 'https://www.kugou.com/' });
-    const data = JSON.parse(res.body);
-    const playUrl = data?.data?.play_url;
-    if (playUrl) return { url: playUrl };
-    return { error: '无法获取播放地址' };
+    // 主通道：手机端 playInfo
+    const b1 = await tryGet(`https://m.kugou.com/app/i/getSongInfo.php?cmd=playInfo&hash=${hash}`);
+    if (b1?.url) return { url: b1.url };
+    // 备用1：wwwapi getdata（带/不带 album_id + platid 组合）
+    const mid = (() => { let t = ''; for (let i = 0; i < 32; i++) t += '0123456789abcdef'[Math.floor(Math.random() * 16)]; return t; })();
+    const build = (album, platid) => `https://wwwapi.kugou.com/yy/index.php?r=play/getdata&hash=${hash}&album_id=${album || ''}&platid=${platid}&appid=1014&mid=${mid}`;
+    for (const u of [build(albumId, 4), build('', 4), build('', 0)]) {
+      const b = await tryGet(u);
+      if (b?.data?.play_url) return { url: b.data.play_url };
+    }
+    return { error: '该歌曲受版权保护或已在酷狗下架，暂无法播放' };
   } catch (err) {
     return { error: err.message };
   }
-});
-
-// ========== 天气 ==========
+});// ========== 天气 ==========
 ipcMain.handle('weather:get', async (e, city) => {
   try {
     const targetCity = city || '扬州';

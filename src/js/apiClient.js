@@ -110,8 +110,8 @@ export const apiClient = {
     return cachedRequest(key, () => api.kugouSearch(keyword), 'search', opts);
   },
 
-  kugouUrl(hash, opts = {}) {
-    return withRetry(() => api.kugouUrl(hash), opts);
+  kugouUrl(hash, albumId, opts = {}) {
+    return withRetry(() => api.kugouUrl(hash, albumId), opts);
   },
 
   // ========== 天气 ==========

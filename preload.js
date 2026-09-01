@@ -14,7 +14,7 @@ contextBridge.exposeInMainWorld('qingAPI', {
   qqUrl: (songmid) => ipcRenderer.invoke('qq:url', songmid),
   // 酷狗
   kugouSearch: (keyword) => ipcRenderer.invoke('kugou:search', keyword),
-  kugouUrl: (hash) => ipcRenderer.invoke('kugou:url', hash),
+  kugouUrl: (hash, albumId) => ipcRenderer.invoke('kugou:url', hash, albumId),
   // 天气
   getWeather: (city) => ipcRenderer.invoke('weather:get', city),
   // 系统控制
