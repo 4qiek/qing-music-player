@@ -30,6 +30,9 @@ import { initDesktopLyric, toggleDesktopLyric } from './desktopLyric.js';
 import * as visualizer from './visualizer.js';
 import { initVideo } from './video.js';
 import { initBrowser } from './browser.js';
+import { initAppSwitch } from './appSwitch.js';
+import { initImage } from './image.js';
+import { initBook } from './book.js';
 
 export { switchView };
 
@@ -67,6 +70,9 @@ export function initApp() {
   initDesktopLyric();
   initVideo();
   initBrowser();
+  initAppSwitch();
+  initImage();
+  initBook();
 
   // 播放模式切换
   const modeBtn = document.getElementById('playModeBtn');

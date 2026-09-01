@@ -1,7 +1,7 @@
 {
   "name": "qing-player",
   "version": "1.0.0",
-  "description": "清 - 灰白风本地与在线音乐播放器",
+  "description": "清 - 灰白风万能播放器（音乐/视频/图片/书籍/浏览器）",
   "main": "main.js",
   "author": "Qing",
   "license": "MIT",
@@ -37,10 +37,10 @@
         }
       ],
       "icon": "assets/qing-icon.ico",
-      "artifactName": "清-音乐播放器-${version}.exe"
+      "artifactName": "清-${version}.exe"
     },
     "portable": {
-      "artifactName": "清-音乐播放器-${version}.exe"
+      "artifactName": "清-${version}.exe"
     }
   }
 }

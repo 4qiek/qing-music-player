@@ -16,8 +16,7 @@ function send(cb) {
 }
 
 export function initBrowser() {
-  // 侧边栏「浏览器」入口
-  $('browserNav').addEventListener('click', () => openBrowser());
+  // 侧边栏「浏览器」入口由 appSwitch 统一管理，这里只负责工具条交互
 
   // 工具条按钮
   $('browserBack').addEventListener('click', () => send(() => window.qingAPI.browserGo('back')));
@@ -104,14 +103,13 @@ export function closeBrowser() {
   }
   send(() => window.qingAPI.browserClose());
   setActive(false);
+  // 通知应用切换层回到音乐
+  document.dispatchEvent(new CustomEvent('browser:closed'));
 }
 
 function setActive(on) {
   active = on;
   $('browserBar').style.display = on ? 'flex' : 'none';
-  // 侧边栏高亮还原
-  document.querySelectorAll('.nav-item').forEach((n) => n.classList.remove('active'));
-  if (on) $('browserNav').classList.add('active');
 }
 
 export default { initBrowser, openBrowser, closeBrowser };

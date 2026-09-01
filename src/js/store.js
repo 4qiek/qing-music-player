@@ -9,6 +9,8 @@ const initialState = {
   // 播放相关
   localTracks: [],
   localVideos: [],
+  localImages: [],
+  localBooks: [],
   searchResults: [],
   currentQueue: [],
   currentIndex: -1,

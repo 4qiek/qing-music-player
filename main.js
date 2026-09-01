@@ -15,7 +15,7 @@ function createWindow() {
     minWidth: 900,
     minHeight: 600,
     backgroundColor: '#f5f5f7',
-    title: '清 · 音乐播放器',
+    title: '清',
     icon: path.join(__dirname, 'assets', 'qing-icon.ico'),
     frame: true,
     webPreferences: {
@@ -597,7 +597,7 @@ Write-Output $p.ExitCode
     await configureEqDevice();
     
     // 写入默认配置
-    const defaultConfig = `# 清音乐播放器 - 系统EQ配置\nPreamp: 0.0 dB\n` +
+    const defaultConfig = `# 清 - 系统EQ配置\nPreamp: 0.0 dB\n` +
       EQ_FREQS.map((f, i) => `Filter ${i+1}: ON PK Fc ${f} Hz Gain 0.0 dB Q 1.41`).join('\n');
     fs.writeFileSync(EQ_CONFIG_PATH, defaultConfig, 'utf8');
     
@@ -652,7 +652,7 @@ ipcMain.handle('system:applyEq', async (e, values) => {
     const maxGain = Math.max(...values, 0);
     const preamp = maxGain > 0 ? -maxGain : 0;
     
-    let config = `# 清音乐播放器 - 系统EQ配置\n`;
+    let config = `# 清 - 系统EQ配置\n`;
     config += `Preamp: ${preamp.toFixed(1)} dB\n`;
     values.forEach((gain, i) => {
       const freq = EQ_FREQS[i];
@@ -828,7 +828,7 @@ function createTray() {
       if (trayIcon.isEmpty()) trayIcon = nativeImage.createEmpty();
     } catch (e) { trayIcon = undefined; }
     tray = new Tray(trayIcon || iconPath);
-    tray.setToolTip('清·音乐播放器');
+    tray.setToolTip('清');
     const menu = Menu.buildFromTemplate([
       { label: '显示 / 隐藏窗口', click: () => toggleMainWindow() },
       { label: '播放 / 暂停', click: () => sendTrayAction('playpause') },

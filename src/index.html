@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>清 · 音乐播放器</title>
+<title>清</title>
 <link rel="stylesheet" href="./css/style.css">
 <link rel="stylesheet" href="./css/weather.css">
 </head>
@@ -47,6 +47,11 @@
   <symbol id="i-back" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5m0 0 6 6m-6-6 6-6"/></symbol>
   <symbol id="i-fwd" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14m0 0-6-6m6 6-6 6"/></symbol>
   <symbol id="i-refresh" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.64-6.36M21 3v6h-6"/></symbol>
+  <symbol id="i-image" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></symbol>
+  <symbol id="i-book" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V3H6.5A2.5 2.5 0 0 0 4 5.5v14z"/><path d="M4 19.5A2.5 2.5 0 0 0 6.5 22H20v-5"/></symbol>
+  <symbol id="i-zoom-in" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3M11 8v6M8 11h6"/></symbol>
+  <symbol id="i-zoom-out" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3M8 11h6"/></symbol>
+  <symbol id="i-font" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7V4h16v3M9 20h6M12 4v16"/></symbol>
 </svg>
 
 <!-- ===== 顶部栏 ===== -->
@@ -79,48 +84,63 @@
 <div class="main">
   <!-- 侧边栏 -->
   <div class="sidebar">
-    <div class="nav-section">资料库</div>
-    <div class="nav-item active" data-view="local" role="button" tabindex="0">
-      <svg><use href="#i-home"/></svg> 本地音乐
-    </div>
-    <div class="nav-item" data-view="search" role="button" tabindex="0">
-      <svg><use href="#i-search"/></svg> 在线搜索
-    </div>
-    <div class="nav-section">发现</div>
-    <div class="nav-item" data-view="toplist" role="button" tabindex="0">
-      <svg><use href="#i-trend"/></svg> 排行榜
-    </div>
-    <div class="nav-item" data-view="recommend" role="button" tabindex="0">
-      <svg><use href="#i-spark"/></svg> 每日推荐
-    </div>
-    <div class="nav-section">我的</div>
-    <div class="nav-item" data-view="favorites" role="button" tabindex="0">
-      <svg><use href="#i-heart"/></svg> 我的收藏
-    </div>
-    <div class="nav-item" data-view="history" role="button" tabindex="0">
-      <svg><use href="#i-clock"/></svg> 播放历史
-    </div>
-    <div class="nav-section">工具</div>
-    <div class="nav-item" data-view="video" role="button" tabindex="0">
-      <svg><use href="#i-video"/></svg> 视频
-    </div>
-    <div class="nav-item" id="browserNav" role="button" tabindex="0" title="内嵌浏览器（支持无痕模式）">
-      <svg><use href="#i-globe"/></svg> 浏览器
-    </div>
-    <div class="nav-section" id="playlistSection" style="display:none;">我的歌单</div>
-    <div id="playlistNav"></div>
-
-    <div class="city-poem" id="cityPoem" title="根据当前城市随机展示相关诗句，点击「换」可换一句">
-      <div class="cp-head">
-        <span class="cp-city" id="cpCity">扬州</span>
-        <span class="cp-shuffle" id="cpShuffle" role="button" tabindex="0" aria-label="换一句诗句">换</span>
+    <!-- 五个平级应用切换 -->
+    <div class="app-switch" role="tablist" aria-label="功能切换">
+      <div class="app-item active" data-app="music" role="tab" tabindex="0" aria-selected="true" title="音乐">
+        <svg><use href="#i-music"/></svg><span>音乐</span>
       </div>
-      <div class="cp-text" id="cpText"></div>
-      <div class="cp-from" id="cpFrom"></div>
+      <div class="app-item" data-app="video" role="tab" tabindex="0" aria-selected="false" title="视频">
+        <svg><use href="#i-video"/></svg><span>视频</span>
+      </div>
+      <div class="app-item" data-app="image" role="tab" tabindex="0" aria-selected="false" title="图片">
+        <svg><use href="#i-image"/></svg><span>图片</span>
+      </div>
+      <div class="app-item" data-app="book" role="tab" tabindex="0" aria-selected="false" title="书籍">
+        <svg><use href="#i-book"/></svg><span>书籍</span>
+      </div>
+      <div class="app-item" id="appBrowser" role="tab" tabindex="0" aria-selected="false" title="浏览器（无痕模式）">
+        <svg><use href="#i-globe"/></svg><span>浏览器</span>
+      </div>
     </div>
 
-    <div class="user-card" id="userCard">
-      <button class="login-btn" id="loginBtn">登录网易云账号</button>
+    <!-- 音乐应用子导航 -->
+    <div class="music-nav" id="musicNav">
+      <div class="nav-section">资料库</div>
+      <div class="nav-item active" data-view="local" role="button" tabindex="0">
+        <svg><use href="#i-home"/></svg> 本地音乐
+      </div>
+      <div class="nav-item" data-view="search" role="button" tabindex="0">
+        <svg><use href="#i-search"/></svg> 在线搜索
+      </div>
+      <div class="nav-section">发现</div>
+      <div class="nav-item" data-view="toplist" role="button" tabindex="0">
+        <svg><use href="#i-trend"/></svg> 排行榜
+      </div>
+      <div class="nav-item" data-view="recommend" role="button" tabindex="0">
+        <svg><use href="#i-spark"/></svg> 每日推荐
+      </div>
+      <div class="nav-section">我的</div>
+      <div class="nav-item" data-view="favorites" role="button" tabindex="0">
+        <svg><use href="#i-heart"/></svg> 我的收藏
+      </div>
+      <div class="nav-item" data-view="history" role="button" tabindex="0">
+        <svg><use href="#i-clock"/></svg> 播放历史
+      </div>
+      <div class="nav-section" id="playlistSection" style="display:none;">我的歌单</div>
+      <div id="playlistNav"></div>
+
+      <div class="city-poem" id="cityPoem" title="根据当前城市随机展示相关诗句，点击「换」可换一句">
+        <div class="cp-head">
+          <span class="cp-city" id="cpCity">扬州</span>
+          <span class="cp-shuffle" id="cpShuffle" role="button" tabindex="0" aria-label="换一句诗句">换</span>
+        </div>
+        <div class="cp-text" id="cpText"></div>
+        <div class="cp-from" id="cpFrom"></div>
+      </div>
+
+      <div class="user-card" id="userCard">
+        <button class="login-btn" id="loginBtn">登录网易云账号</button>
+      </div>
     </div>
   </div>
 
@@ -259,6 +279,22 @@
             <input type="file" id="videoFileInput" accept="video/*" multiple style="display:none;">
           </div>
           <div class="song-list" id="videoList"></div>
+        </div>
+        <div id="view-image" style="display:none;">
+          <div class="content-header">
+            <div><h2>图片查看</h2><div class="sub">导入本地图片，点击查看原图</div></div>
+            <button class="btn btn-primary" id="imageImportBtn">+ 导入图片</button>
+            <input type="file" id="imageFileInput" accept="image/*" multiple style="display:none;">
+          </div>
+          <div class="image-grid" id="imageGrid"></div>
+        </div>
+        <div id="view-book" style="display:none;">
+          <div class="content-header">
+            <div><h2>书籍阅读</h2><div class="sub">导入 TXT / Markdown 文档，点击开始阅读</div></div>
+            <button class="btn btn-primary" id="bookImportBtn">+ 导入书籍</button>
+            <input type="file" id="bookFileInput" accept=".txt,.md,.markdown,.text" multiple style="display:none;">
+          </div>
+          <div class="song-list" id="bookList"></div>
         </div>
       </div>
 
@@ -418,6 +454,36 @@
     <button class="vp-close" id="videoPlayerClose" title="关闭 (Esc)" aria-label="关闭视频"><svg><use href="#i-close"/></svg></button>
   </div>
   <video id="videoPlayer" controls playsinline preload="metadata"></video>
+</div>
+
+<!-- ===== 全屏图片查看器 ===== -->
+<div class="image-viewer" id="imageViewer" role="dialog" aria-label="图片查看器" style="display:none;">
+  <div class="iv-topbar">
+    <span class="vp-title" id="imageViewerTitle">图片</span>
+    <span class="iv-count" id="imageViewerCount"></span>
+    <div class="iv-tools">
+      <button class="vp-close" id="imageZoomOut" title="缩小" aria-label="缩小"><svg><use href="#i-zoom-out"/></svg></button>
+      <button class="vp-close" id="imageZoomIn" title="放大" aria-label="放大"><svg><use href="#i-zoom-in"/></svg></button>
+      <button class="vp-close" id="imageViewerClose" title="关闭 (Esc)" aria-label="关闭"><svg><use href="#i-close"/></svg></button>
+    </div>
+  </div>
+  <img id="imageViewerImg" alt="图片">
+  <button class="iv-nav iv-prev" id="imageViewerPrev" title="上一张 (←)" aria-label="上一张"><svg><use href="#i-prev"/></svg></button>
+  <button class="iv-nav iv-next" id="imageViewerNext" title="下一张 (→)" aria-label="下一张"><svg><use href="#i-next"/></svg></button>
+</div>
+
+<!-- ===== 书籍阅读器 ===== -->
+<div class="book-reader" id="bookReader" role="dialog" aria-label="书籍阅读器" style="display:none;">
+  <div class="br-topbar">
+    <span class="vp-title" id="bookReaderTitle">书籍</span>
+    <div class="iv-tools">
+      <button class="vp-close" id="bookFontDown" title="减小字号" aria-label="减小字号"><svg><use href="#i-font"/></svg></button>
+      <span class="br-fontsize" id="bookFontSize">16px</span>
+      <button class="vp-close" id="bookFontUp" title="增大字号" aria-label="增大字号"><svg><use href="#i-font"/></svg></button>
+      <button class="vp-close" id="bookReaderClose" title="关闭 (Esc)" aria-label="关闭"><svg><use href="#i-close"/></svg></button>
+    </div>
+  </div>
+  <div class="br-content" id="bookContent"></div>
 </div>
 
 <script type="module" src="./js/app.js"></script>

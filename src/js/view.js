@@ -6,7 +6,7 @@ import { store } from './store.js';
 
 const $ = (id) => document.getElementById(id);
 
-const VIEW_IDS = ['local', 'search', 'playlist', 'toplist', 'recommend', 'favorites', 'history', 'video'];
+const VIEW_IDS = ['local', 'search', 'playlist', 'toplist', 'recommend', 'favorites', 'history', 'video', 'image', 'book'];
 
 // 进入某视图时派发懒加载事件（由对应模块监听）
 const LOAD_EVENT = {
