@@ -1,7 +1,7 @@
 /**
  * main/ipc-system.js — 系统相关 IPC（天气 / 媒体键 / SMTC / USB音频 / 系统EQ）
  */
-const { ipcMain } = require('electron');
+const { ipcMain, dialog } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const os = require('os');
@@ -266,6 +266,17 @@ $result | ConvertTo-Json -Compress
         await configureEqDevice();
         return { success: true, alreadyInstalled: true };
       }
+      // 安装前显式征求用户同意
+      const { response } = await dialog.showMessageBox(state.mainWindow, {
+        type: 'question',
+        buttons: ['确认安装', '取消'],
+        defaultId: 1,
+        cancelId: 1,
+        title: '安装系统级 EQ',
+        message: '即将下载并安装 Equalizer APO（系统级音频均衡器）',
+        detail: '该软件需要管理员权限，安装后会修改系统音频配置并重启音频服务。是否继续？'
+      });
+      if (response !== 0) return { error: '用户取消安装' };
       const zipPath = path.join(os.tmpdir(), 'EqualizerAPO_Setup.zip');
       const extractPath = path.join(os.tmpdir(), 'EqualizerAPO_Setup_extract');
       if (!fs.existsSync(zipPath) || fs.statSync(zipPath).size < 1000000) { await downloadFile(EQ_DOWNLOAD_URL, zipPath); }

@@ -26,11 +26,13 @@ const CACHE_TTL = {
  * @param {object} opts
  */
 async function withRetry(invoke, opts = {}) {
-  const { maxRetries = 3 } = opts;
-  return retry(invoke, {
+  const { maxRetries = 3, timeout = 15000 } = opts;
+  return retry(() => Promise.race([
+    invoke(),
+    new Promise((_, reject) => setTimeout(() => reject(new Error('请求超时，请检查网络连接')), timeout))
+  ]), {
     maxRetries,
     baseDelay: 500,
-    // 明确返回 error 字段的业务失败不重试；网络/系统异常才重试
     shouldRetry: (err) => !(err && err.message && err.message.startsWith('业务'))
   });
 }
