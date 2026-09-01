@@ -26,6 +26,7 @@
     },
     "files": [
       "main.js",
+      "main-media.js",
       "preload.js",
       "src/**/*",
       "assets/**/*",

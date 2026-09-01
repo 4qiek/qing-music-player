@@ -10,6 +10,7 @@ const { app, ipcMain, protocol, dialog } = require('electron');
 const fs = require('fs');
 const path = require('path');
 const url = require('url');
+const { Readable } = require('stream');
 
 // 让自定义协议具备标准媒体能力（流式、Range、可被 media 元素加载）
 try {
@@ -107,44 +108,47 @@ function watchFolder(dir) {
 function init(getWindow) {
   getMainWindow = getWindow || getMainWindow;
 
-  // ---- qing-file 流式协议（含 Range/206，支持视频拖动） ----
-  protocol.registerStreamProtocol('qing-file', (request, callback) => {
+  // ---- qing-file 流式协议（含 Range/206，支持视频拖动）----
+  // Electron 28 用 protocol.handle（registerStreamProtocol 已移除）
+  protocol.handle('qing-file', async (request) => {
     let filePath = '';
     try {
       const u = new url.URL(request.url);
       filePath = decodeURIComponent(u.pathname.replace(/^\/+/, ''));
-    } catch (e) { return callback({ statusCode: 400, data: null }); }
-    fs.stat(filePath, (err, stat) => {
-      if (err || !stat.isFile()) return callback({ statusCode: 404, data: null });
-      const mime = MIME[extOf(filePath)] || 'application/octet-stream';
-      const range = (request.headers && request.headers.Range) || (request.headers && request.headers.range);
-      if (range) {
-        const m = /bytes=(\d+)-(\d*)/.exec(range);
-        if (m) {
-          const start = parseInt(m[1], 10);
-          const end = m[2] ? parseInt(m[2], 10) : stat.size - 1;
-          if (start >= stat.size) {
-            return callback({ statusCode: 416, headers: { 'Content-Range': `bytes */${stat.size}` }, data: null });
-          }
-          const stream = fs.createReadStream(filePath, { start, end });
-          return callback({
-            statusCode: 206,
-            headers: {
-              'Content-Type': mime,
-              'Accept-Ranges': 'bytes',
-              'Content-Range': `bytes ${start}-${end}/${stat.size}`,
-              'Content-Length': String(end - start + 1)
-            },
-            data: stream
-          });
+    } catch (e) {
+      return new Response('bad url', { status: 400 });
+    }
+    let stat;
+    try { stat = fs.statSync(filePath); } catch (e) {
+      return new Response('not found', { status: 404 });
+    }
+    if (!stat.isFile()) return new Response('not found', { status: 404 });
+    const mime = MIME[extOf(filePath)] || 'application/octet-stream';
+    const range = request.headers.get('Range');
+    if (range) {
+      const m = /bytes=(\d+)-(\d*)/.exec(range);
+      if (m) {
+        const start = parseInt(m[1], 10);
+        const end = m[2] ? parseInt(m[2], 10) : stat.size - 1;
+        if (start >= stat.size) {
+          return new Response('', { status: 416, headers: { 'Content-Range': `bytes */${stat.size}` } });
         }
+        const stream = fs.createReadStream(filePath, { start, end });
+        return new Response(Readable.toWeb(stream), {
+          status: 206,
+          headers: {
+            'Content-Type': mime,
+            'Accept-Ranges': 'bytes',
+            'Content-Range': `bytes ${start}-${end}/${stat.size}`,
+            'Content-Length': String(end - start + 1)
+          }
+        });
       }
-      const stream = fs.createReadStream(filePath);
-      callback({
-        statusCode: 200,
-        headers: { 'Content-Type': mime, 'Accept-Ranges': 'bytes', 'Content-Length': String(stat.size) },
-        data: stream
-      });
+    }
+    const stream = fs.createReadStream(filePath);
+    return new Response(Readable.toWeb(stream), {
+      status: 200,
+      headers: { 'Content-Type': mime, 'Accept-Ranges': 'bytes', 'Content-Length': String(stat.size) }
     });
   });
 
