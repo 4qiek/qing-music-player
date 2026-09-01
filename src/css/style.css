@@ -1741,60 +1741,10 @@ body.mini-mode .np-controls { gap: 6px; }
 
 
 /* ============================================================
-   「清」文艺轻量化主题 —— 暖纸 / 墨色 / 衬线 / 柔化
-   覆盖在原高级灰变量之上，统一提升书卷气与轻盈感
+   「清」文艺轻量化 —— 保留高级灰白配色，只做衬线/柔化/卡片等排版提升
    ============================================================ */
 :root {
   --serif: "Songti SC", "STSong", "Noto Serif SC", "Source Han Serif SC", "SimSun", serif;
-  /* 宣纸暖白底 */
-  --bg: #f4f1ea;
-  --bg-grad-1: rgba(244, 241, 234, 0.70);
-  --bg-grad-2: rgba(244, 241, 234, 0.92);
-  --surface: rgba(255, 254, 250, 0.62);
-  --surface-solid: #fdfbf6;
-  --surface-strong: rgba(255, 254, 250, 0.86);
-  --sidebar: rgba(238, 233, 223, 0.55);
-  /* 墨褐文字 */
-  --text: #33302a;
-  --text-2: #7d766a;
-  --text-3: #aca496;
-  --border: rgba(92, 80, 60, 0.10);
-  --border-strong: rgba(92, 80, 60, 0.16);
-  --hover: rgba(92, 80, 60, 0.045);
-  --active-bg: rgba(74, 82, 72, 0.10);
-  /* 松烟黛绿作为主强调，朱砂赭作点缀 */
-  --accent: #4a5248;
-  --accent-text: #fbf9f3;
-  --accent-soft: rgba(74, 82, 72, 0.08);
-  --ink: #a85a45;
-  --shadow-sm: 0 1px 2px rgba(92, 80, 60, 0.05);
-  --shadow-md: 0 6px 22px rgba(92, 80, 60, 0.08);
-  --shadow-lg: 0 18px 52px rgba(92, 80, 60, 0.14);
-  --radius-sm: 8px;
-  --radius-md: 12px;
-  --radius-lg: 18px;
-  --blur: blur(22px) saturate(1.35);
-}
-
-[data-theme="dark"] {
-  --bg: #211f1b;
-  --bg-grad-1: rgba(33, 31, 27, 0.72);
-  --bg-grad-2: rgba(33, 31, 27, 0.92);
-  --surface: rgba(44, 41, 36, 0.6);
-  --surface-solid: #2b2924;
-  --surface-strong: rgba(48, 45, 40, 0.86);
-  --sidebar: rgba(30, 28, 24, 0.6);
-  --text: #efe9dd;
-  --text-2: #a99f8f;
-  --text-3: #70695c;
-  --border: rgba(240, 232, 216, 0.09);
-  --border-strong: rgba(240, 232, 216, 0.15);
-  --hover: rgba(240, 232, 216, 0.05);
-  --active-bg: rgba(201, 194, 178, 0.12);
-  --accent: #c9c2b2;
-  --accent-text: #26231e;
-  --accent-soft: rgba(201, 194, 178, 0.10);
-  --ink: #cf8a72;
 }
 
 /* 标题与歌名用衬线，书卷气 */
