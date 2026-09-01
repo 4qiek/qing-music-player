@@ -1738,3 +1738,187 @@ body.mini-mode .np-controls { gap: 6px; }
 .img-cell:hover .img-del { opacity: 1; }
 .img-cell .img-del:hover { background: rgba(220, 60, 60, 0.9); }
 .img-del svg { width: 14px; height: 14px; }
+
+
+/* ============================================================
+   「清」文艺轻量化主题 —— 暖纸 / 墨色 / 衬线 / 柔化
+   覆盖在原高级灰变量之上，统一提升书卷气与轻盈感
+   ============================================================ */
+:root {
+  --serif: "Songti SC", "STSong", "Noto Serif SC", "Source Han Serif SC", "SimSun", serif;
+  /* 宣纸暖白底 */
+  --bg: #f4f1ea;
+  --bg-grad-1: rgba(244, 241, 234, 0.70);
+  --bg-grad-2: rgba(244, 241, 234, 0.92);
+  --surface: rgba(255, 254, 250, 0.62);
+  --surface-solid: #fdfbf6;
+  --surface-strong: rgba(255, 254, 250, 0.86);
+  --sidebar: rgba(238, 233, 223, 0.55);
+  /* 墨褐文字 */
+  --text: #33302a;
+  --text-2: #7d766a;
+  --text-3: #aca496;
+  --border: rgba(92, 80, 60, 0.10);
+  --border-strong: rgba(92, 80, 60, 0.16);
+  --hover: rgba(92, 80, 60, 0.045);
+  --active-bg: rgba(74, 82, 72, 0.10);
+  /* 松烟黛绿作为主强调，朱砂赭作点缀 */
+  --accent: #4a5248;
+  --accent-text: #fbf9f3;
+  --accent-soft: rgba(74, 82, 72, 0.08);
+  --ink: #a85a45;
+  --shadow-sm: 0 1px 2px rgba(92, 80, 60, 0.05);
+  --shadow-md: 0 6px 22px rgba(92, 80, 60, 0.08);
+  --shadow-lg: 0 18px 52px rgba(92, 80, 60, 0.14);
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 18px;
+  --blur: blur(22px) saturate(1.35);
+}
+
+[data-theme="dark"] {
+  --bg: #211f1b;
+  --bg-grad-1: rgba(33, 31, 27, 0.72);
+  --bg-grad-2: rgba(33, 31, 27, 0.92);
+  --surface: rgba(44, 41, 36, 0.6);
+  --surface-solid: #2b2924;
+  --surface-strong: rgba(48, 45, 40, 0.86);
+  --sidebar: rgba(30, 28, 24, 0.6);
+  --text: #efe9dd;
+  --text-2: #a99f8f;
+  --text-3: #70695c;
+  --border: rgba(240, 232, 216, 0.09);
+  --border-strong: rgba(240, 232, 216, 0.15);
+  --hover: rgba(240, 232, 216, 0.05);
+  --active-bg: rgba(201, 194, 178, 0.12);
+  --accent: #c9c2b2;
+  --accent-text: #26231e;
+  --accent-soft: rgba(201, 194, 178, 0.10);
+  --ink: #cf8a72;
+}
+
+/* 标题与歌名用衬线，书卷气 */
+.content-header h2,
+.main-song-name,
+.np-title,
+.view-title {
+  font-family: var(--serif);
+  font-weight: 600;
+  letter-spacing: 0.5px;
+}
+.content-header .sub { color: var(--text-3); font-size: 12px; margin-top: 3px; }
+
+/* ---------- 五平级应用切换：更轻盈 ---------- */
+.app-switch {
+  gap: 3px;
+  padding: 2px 2px 14px;
+  border-bottom: 1px solid var(--border);
+}
+.app-item {
+  border-radius: 10px;
+  padding: 9px 12px;
+  font-size: 13px;
+  letter-spacing: 1px;
+  color: var(--text-2);
+}
+.app-item svg { width: 17px; height: 17px; }
+.app-item:hover { background: var(--hover); color: var(--text); }
+.app-item.active {
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-weight: 600;
+}
+.app-item.active svg { color: var(--accent); }
+
+/* 侧边栏导航项柔化 */
+.nav-item { border-radius: 10px; transition: background .18s ease, color .18s ease; }
+.nav-item:hover { background: var(--hover); }
+.nav-item.active { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+.nav-section { letter-spacing: 2px; opacity: 0.75; }
+
+/* ---------- 城市诗句：文艺卡片 ---------- */
+.city-poem {
+  position: relative;
+  margin-top: auto;
+  flex-shrink: 0;
+  padding: 14px 14px 14px 16px;
+  background: linear-gradient(160deg, var(--accent-soft), transparent 70%), var(--surface);
+  border: 1px solid var(--border);
+  border-left: none;
+  border-radius: 4px 14px 14px 4px;
+  overflow: hidden;
+}
+.city-poem::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 12px; bottom: 12px;
+  width: 2.5px;
+  border-radius: 2px;
+  background: linear-gradient(var(--accent), transparent);
+  opacity: 0.55;
+}
+.cp-city {
+  font-family: var(--serif);
+  font-size: 13px;
+  letter-spacing: 2px;
+  color: var(--accent);
+}
+.cp-city::before { content: ''; }
+.cp-shuffle {
+  border-radius: 999px;
+  letter-spacing: 1px;
+  transition: all .18s ease;
+}
+.cp-text {
+  font-family: var(--serif);
+  font-size: 13.5px;
+  line-height: 1.95;
+  letter-spacing: 0.6px;
+  font-weight: 400;
+}
+.cp-from {
+  font-family: var(--serif);
+  font-style: italic;
+  opacity: 0.7;
+  letter-spacing: 0.5px;
+}
+
+/* ---------- 卡片 / 面板轻量化 ---------- */
+.panel-left {
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-md);
+}
+.song-row { border-radius: 10px; transition: background .16s ease; }
+.song-row:hover { background: var(--hover); }
+.btn, .btn-primary {
+  border-radius: 10px;
+  letter-spacing: 1px;
+  transition: transform .15s ease, box-shadow .15s ease, background .15s ease;
+}
+.btn-primary { box-shadow: var(--shadow-sm); }
+.btn-primary:hover { transform: translateY(-1px); box-shadow: var(--shadow-md); }
+.btn-primary:active { transform: translateY(0); }
+
+/* 平台标签胶囊化 */
+.platform-tab {
+  border-radius: 999px;
+  transition: all .18s ease;
+}
+.platform-tab.active { background: var(--accent); color: var(--accent-text); }
+
+/* 底部播放条更通透 */
+.player-bar {
+  border-top: 1px solid var(--border);
+  background: var(--surface);
+}
+
+/* 图片网格 / 书籍列表圆角统一 */
+.img-cell { border-radius: 14px; }
+.disc-card { border-radius: 14px; }
+
+/* 滚动条纤细文艺 */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 999px; }
+::-webkit-scrollbar-thumb:hover { background: var(--text-3); }
+::-webkit-scrollbar-track { background: transparent; }

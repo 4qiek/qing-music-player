@@ -155,14 +155,17 @@ function getProvince(city) {
 
 export async function loadWeather(city) {
   const w = await apiClient.getWeather(city || '扬州');
-  if (w.error) {
-    $('wDesc').textContent = '获取失败';
+  if (!w || w.error || w.temp == null) {
+    $('wTemp').textContent = '--°';
+    $('wDesc').textContent = '天气获取失败';
     return;
   }
   store.set('currentWeather', w);
   $('wTemp').textContent = w.temp + '°';
-  $('wCity').textContent = w.city;
-  $('wDesc').textContent = `${w.desc} ${w.todayLow}°~${w.todayHigh}°`;
+  $('wCity').textContent = w.city || city || '';
+  $('wDesc').textContent = w.desc
+    ? `${w.desc}${(w.todayLow != null && w.todayHigh != null) ? ' ' + w.todayLow + '°~' + w.todayHigh + '°' : ''}`
+    : '';
 }
 
 export function renderWeatherScene() {

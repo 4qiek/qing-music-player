@@ -59,9 +59,10 @@ function activateApp(app, view) {
   $('musicNav').style.display = app === 'music' ? '' : 'none';
 
   // 音乐专属 UI 只在音乐应用显示：
-  // 顶部搜索框 / 平台标签 / 天气卡片 / 左侧播放面板 / 底部播放条
+  // 顶部搜索框 / 平台标签 / 左侧播放面板 / 底部播放条
+  // （天气与城市诗句是全局氛围，所有功能都保留）
   const musicOnly = app === 'music';
-  document.querySelectorAll('.search-box, .platform-tabs, .weather-widget, .player-bar').forEach((el) => {
+  document.querySelectorAll('.search-box, .platform-tabs, .player-bar').forEach((el) => {
     el.style.display = musicOnly ? '' : 'none';
   });
   const panelLeft = document.querySelector('.panel-left');
