@@ -502,6 +502,14 @@ img { -webkit-user-drag: none; }
 .ctrl-btn.play-btn:hover { opacity: 0.9; transform: scale(1.04); }
 .ctrl-btn.play-btn svg { width: 20px; height: 20px; }
 
+/* 详情页控制按钮组：横排（.ctrl-btn 为块级 flex，需容器 flex 才不竖排） */
+.controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+}
+
 /* 进度条 */
 .progress-wrap {
   width: 100%;
