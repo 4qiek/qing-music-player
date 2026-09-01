@@ -720,6 +720,7 @@ img { -webkit-user-drag: none; }
   cursor: pointer;
   transition: all 0.18s;
   color: var(--text);
+  white-space: nowrap;
 }
 .btn:hover { background: var(--surface-strong); transform: translateY(-1px); box-shadow: var(--shadow-sm); }
 .btn:active { transform: translateY(0); }
