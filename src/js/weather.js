@@ -282,10 +282,10 @@ export function renderWeatherScene() {
     return;
   }
 
-  // 省份背景：大号淡色汉字
+  // 省份地标背景
   const province = getProvince(currentWeather.city);
-  if (province) {
-    landmarksEl.innerHTML = `<div class="province-bg-char">${province.charAt(0)}</div>`;
+  if (province && PROVINCE_LANDMARKS[province]) {
+    landmarksEl.innerHTML = PROVINCE_LANDMARKS[province].join('');
     provinceLabel.textContent = province;
   } else {
     landmarksEl.innerHTML = '';

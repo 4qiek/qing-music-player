@@ -176,36 +176,33 @@
 
 .wp-scene > * { animation: fadeIn 0.6s ease; }
 
-/* 省份背景大字 */
+/* 省份地标建筑背景 */
 .wp-landmarks {
   position: absolute;
   bottom: 0;
   left: 0;
   right: 0;
-  height: 200px;
+  height: 100px;
   display: flex;
   align-items: flex-end;
   justify-content: center;
+  gap: 8px;
   pointer-events: none;
-  overflow: hidden;
+  opacity: 0.2;
 }
-.province-bg-char {
-  font-size: 220px;
-  font-weight: 700;
-  line-height: 0.8;
-  color: var(--text);
-  opacity: 0.05;
-  letter-spacing: 0;
-  user-select: none;
+.wp-landmarks svg {
+  height: 100%;
+  width: auto;
+  stroke: var(--text);
 }
 .wp-province-label {
   position: absolute;
-  bottom: 16px;
+  bottom: 8px;
   left: 50%;
   transform: translateX(-50%);
-  font-size: 12px;
+  font-size: 11px;
   color: var(--text-2);
-  letter-spacing: 6px;
+  letter-spacing: 4px;
   opacity: 0.4;
 }
 
