@@ -193,7 +193,16 @@ module.exports = function initSystemIpc(state) {
     } catch (err) { return { error: err.message }; }
   });
 
-  // ========== 检测其他播放器 ==========
+  // ========== 在线诗词（今日诗词） ==========
+  ipcMain.handle('poem:get', async (e, category) => {
+    try {
+      const base = 'https://v1.jinrishici.com/all.json';
+      const url = category ? `${base}?category=${encodeURIComponent(category)}` : base;
+      const res = await httpGet(url);
+      const data = JSON.parse(res.body);
+      return { content: data.content, origin: data.origin, author: data.author };
+    } catch (err) { return { error: err.message }; }
+  });
   ipcMain.handle('system:detectPlayers', async () => {
     return new Promise((resolve) => {
       const ps = `

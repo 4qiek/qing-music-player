@@ -29,6 +29,8 @@ contextBridge.exposeInMainWorld('qingAPI', {
   metaCover: (url) => ipcRenderer.invoke('meta:cover', url),
   // 天气
   getWeather: (city) => ipcRenderer.invoke('weather:get', city),
+  // 在线诗词
+  getPoem: (category) => ipcRenderer.invoke('poem:get', category),
   // 系统控制
   detectPlayers: () => ipcRenderer.invoke('system:detectPlayers'),
   mediaKey: (key) => ipcRenderer.invoke('system:mediaKey', key),

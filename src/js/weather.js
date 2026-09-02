@@ -185,6 +185,11 @@ export async function loadWeather(city) {
   $('wDesc').textContent = w.desc
     ? `${w.desc}${(w.todayLow != null && w.todayHigh != null) ? ' ' + w.todayLow + '°~' + w.todayHigh + '°' : ''}`
     : '';
+  // 天气详情页打开时，切换城市后立即刷新详情页
+  const weatherPage = $('weatherPage');
+  if (weatherPage && weatherPage.classList.contains('show')) {
+    renderWeatherScene();
+  }
 }
 
 /* ========== 雨雪 Canvas 粒子系统 ========== */
