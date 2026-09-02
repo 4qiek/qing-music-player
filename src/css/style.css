@@ -1339,7 +1339,8 @@ img { -webkit-user-drag: none; }
 .main-song-info .song-text { flex: 1; min-width: 0; text-align: center; }
 .main-song-info .song-text .main-song-name { font-size: 20px; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .main-song-info .song-text .main-song-artist { font-size: 13px; color: var(--text-2); margin-top: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.main-song-info .fav-btn { position: static; transform: none; flex-shrink: 0; }
+.main-song-info .fav-btn { position: static; transform: none; flex-shrink: 0; min-width: 32px; width: 32px; height: 32px; overflow: visible; }
+.main-song-info .fav-btn svg { width: 19px; height: 19px; overflow: visible; display: block; }
 
 .pd-actions { display: flex; gap: 8px; justify-content: center; margin-top: 10px; }
 .pd-actions .fav-btn.active { color: var(--error); }
@@ -1850,7 +1851,11 @@ body.mini-mode .np-controls { gap: 6px; }
   border-left: none;
   border-radius: 4px 14px 14px 4px;
   overflow: hidden;
+  cursor: pointer;
+  transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease;
 }
+.city-poem:hover { transform: translateY(-1px); border-color: var(--border-strong); box-shadow: var(--shadow-md); }
+.city-poem:active { transform: translateY(0) scale(0.99); }
 .city-poem::before {
   content: '';
   position: absolute;
