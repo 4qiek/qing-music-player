@@ -1,24 +1,38 @@
 /**
  * playlists.js — 自建歌单
  *  - 多歌单新建 / 重命名(简化为删除重建) / 删除
- *  - 任意歌曲（在线 / 本地）加入歌单，本地与在线可混排
+ *  - 本地歌曲加入歌单（在线音乐功能已移除，歌单内仅保留本地曲目）
  *  - 侧栏列出歌单，点击进入歌单视图并播放
  *  - 歌单持久化到 localStorage（本地 File 项为会话级，路径项/在线项可长期保留）
  */
 import { store } from './store.js';
 import { eventBus } from './eventBus.js';
-import { toast } from './ui.js';
+import { toast, promptInput, emptyIll } from './ui.js';
 import { switchView } from './view.js';
 import { playQueueIndex, isFavorite, toggleFavorite } from './player.js';
+import { isLocalTrack } from './trackUtil.js';
 
 const $ = (id) => document.getElementById(id);
 const KEY = 'qing-playlists-v1';
 
+/**
+ * 读取本地歌单（localStorage）
+ *
+ * 在线音乐功能已移除：历史歌单里可能混入在线条目，
+ * 这里按 isLocalTrack() 过滤掉，并把过滤结果写回，避免每次启动重复过滤。
+ * @returns {Array<object>} 歌单列表
+ */
 function load() {
   let list = [];
   try { list = JSON.parse(localStorage.getItem(KEY) || '[]'); } catch (e) { list = []; }
-  store.set('playlists', list);
-  return list;
+  if (!Array.isArray(list)) list = [];
+  const cleaned = list.map((p) => ({
+    ...p,
+    tracks: (p.tracks || []).filter(isLocalTrack)
+  }));
+  store.set('playlists', cleaned);
+  try { localStorage.setItem(KEY, JSON.stringify(cleaned)); } catch (e) { /* 配额超限忽略 */ }
+  return cleaned;
 }
 function save(list) {
   // 去掉不可序列化的 File 对象
@@ -117,10 +131,10 @@ function openPlaylist(id) {
   store.set('openPlaylistId', id);
   switchView('playlist');
   $('playlistTitle').textContent = pl.name;
-  $('playlistSub').textContent = `共 ${pl.tracks.length} 首 · 本地与在线可混排`;
+  $('playlistSub').textContent = `共 ${pl.tracks.length} 首本地曲目`;
   const el = $('playlistList');
   if (!pl.tracks.length) {
-    el.innerHTML = '<div class="empty-state"><p>歌单还是空的</p><p class="sub-hint">在歌曲上右键 → 加入歌单</p></div>';
+    el.innerHTML = `<div class="empty-state">${emptyIll('music')}<p class="es-title">歌单还是空的</p><p class="es-sub">在歌曲上右键或悬停点「···」→ 加入歌单</p></div>`;
     return;
   }
   let html = '<div class="song-list-header"><span>#</span><span></span><span>标题</span><span>歌手</span><span style="text-align:right">时长</span><span>来源/移除</span></div>';
@@ -128,7 +142,8 @@ function openPlaylist(id) {
     const cover = t.cover
       ? `<img class="s-cover" src="${t.cover}" referrerpolicy="no-referrer" loading="lazy" alt="">`
       : `<span class="s-cover s-cover-ph"><svg style="width:16px;height:16px"><use href="#i-music"/></svg></span>`;
-    const label = t.platform === 'local' ? '本地' : ({ netease: '网易', qq: 'QQ', kugou: '酷狗' }[t.platform] || '在线');
+    // 用 isLocalTrack 兼容历史落盘、没有 platform 字段的本地条目，避免误显示成「在线」
+    const label = isLocalTrack(t) ? '本地' : '在线';
     html += `<div class="song-row" data-pidx="${i}">
       <span class="idx">${i + 1}</span><span>${cover}</span>
       <span class="s-name">${esc(t.matchedName || t.name)}</span>
@@ -169,9 +184,15 @@ function openAddToPlaylist(track) {
     document.body.appendChild(modal);
     modal.addEventListener('click', (e) => { if (e.target === modal) modal.classList.remove('show'); });
     $('addPlClose').addEventListener('click', () => modal.classList.remove('show'));
-    $('addPlNew').addEventListener('click', () => {
-      const name = prompt('新歌单名称：', '我的歌单');
-      if (!name || !name.trim()) return;
+    $('addPlNew').addEventListener('click', async () => {
+      const name = await promptInput({
+        title: '新建歌单',
+        message: '为歌单起一个名字',
+        placeholder: '我的歌单',
+        defaultValue: '我的歌单',
+        validate: (v) => (v ? '' : '歌单名不能为空')
+      });
+      if (!name) return;
       const pl = createPlaylist(name.trim());
       if (pendingTrack) addToPlaylist(pl.id, pendingTrack);
       modal.classList.remove('show');
@@ -190,7 +211,8 @@ function openAddToPlaylist(track) {
 }
 
 // ===== 歌曲行右键菜单（在线/收藏/历史/歌单/本地通用） =====
-function trackFromRow(row) {
+// 导出供 rowActions.js 的「更多」悬停按钮复用同一解析逻辑
+export function trackFromRow(row) {
   // 本地音乐行
   if (row.dataset.type === 'local' || row.closest('#localList')) {
     const idx = +row.dataset.idx;
@@ -251,8 +273,14 @@ export function initPlaylists() {
   renderPlaylistNav();
   initContextMenu();
   const btn = $('newPlaylistBtn');
-  if (btn) btn.addEventListener('click', () => {
-    const name = prompt('新歌单名称：', '我的歌单');
+  if (btn) btn.addEventListener('click', async () => {
+    const name = await promptInput({
+      title: '新建歌单',
+      message: '为歌单起一个名字',
+      placeholder: '我的歌单',
+      defaultValue: '我的歌单',
+      validate: (v) => (v ? '' : '歌单名不能为空')
+    });
     if (name && name.trim()) {
       const pl = createPlaylist(name.trim());
       renderPlaylistNav();
@@ -264,5 +292,5 @@ export function initPlaylists() {
 }
 
 export default {
-  initPlaylists, openPlaylist, openAddToPlaylist, createPlaylist, addToPlaylist, renderPlaylistNav
+  initPlaylists, openPlaylist, openAddToPlaylist, createPlaylist, addToPlaylist, renderPlaylistNav, trackFromRow
 };

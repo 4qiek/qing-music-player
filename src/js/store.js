@@ -49,6 +49,7 @@ const initialState = {
 
   // 天气
   currentWeather: null,
+  weatherCity: '扬州',
 
   // 其他播放器（SMTC）
   smtcSessions: [],

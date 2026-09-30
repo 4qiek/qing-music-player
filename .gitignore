@@ -1,8 +1,15 @@
+# 依赖
 node_modules/
+package-lock.json
+
+# 构建产物
 dist/
+qing-dist*/
+*.exe
+*.blockmap
+builder-debug.yml
+
+# 日志与临时文件
 *.log
 .DS_Store
 Thumbs.db
-.env
-*.exe
-!assets/*.ico

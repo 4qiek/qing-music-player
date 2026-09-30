@@ -96,33 +96,60 @@ export function getAnalyser() {
 }
 
 /**
+ * 该 audio 元素是否已被 createMediaElementSource 接管。
+ * 接管是不可撤销的：一旦成功，媒体输出就只能通过 Web Audio 图，无法再走直连。
+ * @returns {boolean}
+ */
+export function isAudioElementCaptured() {
+  return !!sourceNode;
+}
+
+/**
  * 初始化 AudioContext 与 EQ 链（懒加载，首次播放/调 EQ 时创建）
+ *
+ * 失败语义：构造 AudioContext 或接管 audio 元素失败时抛出异常，由调用方决定是否降级。
+ * 注意 audioCtx 是先赋值再接管元素的，若接管失败必须把 audioCtx 复位，
+ * 否则下次调用会因「audioCtx 已存在」直接返回，得到一个没有 EQ 链、无法出声的上下文。
+ * 反之若元素已被接管（sourceNode 存在），则保留 audioCtx 现状——此时已无法回退。
+ *
  * @param {HTMLAudioElement} audio
+ * @returns {AudioContext}
  */
 export function initAudioCtx(audio) {
-  if (audioCtx) return audioCtx;
-  audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-  sourceNode = audioCtx.createMediaElementSource(audio);
-  let prev = sourceNode;
-  EQ_FREQS.forEach((f) => {
-    const eq = audioCtx.createBiquadFilter();
-    eq.type = 'peaking';
-    eq.frequency.value = f;
-    eq.Q.value = 1.2;
-    eq.gain.value = 0;
-    eqFilters.push(eq);
-    prev.connect(eq);
-    prev = eq;
-  });
-  prev.connect(audioCtx.destination);
-  // 频谱分析器挂在 EQ 链末端（不改变信号），再进入主总线
-  const an = ensureAnalyser();
-  if (an) {
-    try { prev.disconnect(audioCtx.destination); } catch (e) { /* ignore */ }
-    prev.connect(an);
-    an.connect(ensureMasterBus());
+  // 幂等：已完整构建过 EQ 链则直接返回（sourceNode 为空说明上次构建失败，可重试）
+  if (audioCtx && sourceNode) return audioCtx;
+  try {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    sourceNode = audioCtx.createMediaElementSource(audio);
+    // 重试场景下清空旧滤波器，避免 EQ 链重复叠加
+    eqFilters.length = 0;
+    let prev = sourceNode;
+    EQ_FREQS.forEach((f, i) => {
+      const eq = audioCtx.createBiquadFilter();
+      eq.type = 'peaking';
+      eq.frequency.value = f;
+      eq.Q.value = 1.2;
+      // 恢复持久化的 EQ 增益（秒为单位，store.eqValues 已落盘）
+      const saved = (store.get('eqValues') && store.get('eqValues')[i]) || 0;
+      eq.gain.value = saved;
+      eqFilters.push(eq);
+      prev.connect(eq);
+      prev = eq;
+    });
+    prev.connect(audioCtx.destination);
+    // 频谱分析器挂在 EQ 链末端（不改变信号），再进入主总线
+    const an = ensureAnalyser();
+    if (an) {
+      try { prev.disconnect(audioCtx.destination); } catch (e) { /* ignore */ }
+      prev.connect(an);
+      an.connect(ensureMasterBus());
+    }
+    return audioCtx;
+  } catch (e) {
+    // 未被接管才复位，允许后续（如环境恢复后）重新初始化
+    if (!sourceNode) audioCtx = null;
+    throw e;
   }
-  return audioCtx;
 }
 
 export function getAudioCtx() {
@@ -276,13 +303,13 @@ export async function checkUsbAudio() {
   }
 }
 
-export function startUsbAudioWatch(audio, intervalMs = 10000) {
+export function startUsbAudioWatch(audio, intervalMs = 60000) {
   if (usbCheckTimer) clearInterval(usbCheckTimer);
   checkUsbAudio();
   usbCheckTimer = setInterval(() => checkUsbAudio(), intervalMs);
-  // USB 小尾巴接入时自动启用磁带模式
+  // USB 小尾巴接入且正在播放时，自动启用磁带模式（避免无声音时误开）
   store.subscribe('usbAudioConnected', ({ value }) => {
-    if (value && !store.get('tapeEnabled')) enableTapeEffect(audio);
+    if (value && !store.get('tapeEnabled') && !audio.paused) enableTapeEffect(audio);
   });
 }
 
@@ -297,6 +324,7 @@ export default {
   EQ_FREQS,
   EQ_PRESETS,
   initAudioCtx,
+  isAudioElementCaptured,
   getAudioCtx,
   getAnalyser,
   getEqFilters,

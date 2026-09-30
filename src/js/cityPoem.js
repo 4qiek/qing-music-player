@@ -35,7 +35,7 @@ function categoryByWeather(desc) {
 
 function getCity() {
   const w = store.get('currentWeather');
-  return (w && w.city) || '扬州';
+  return (w && w.city) || store.get('weatherCity') || '扬州';
 }
 
 /** 以城市为主决定分类 */
@@ -51,7 +51,7 @@ async function fetchPoem(textEl, fromEl) {
   if (loading) return;
   loading = true;
   const w = store.get('currentWeather');
-  const city = (w && w.city) || '扬州';
+  const city = (w && w.city) || store.get('weatherCity') || '扬州';
   // 以城市为主，天气为辅
   const category = categoryByCity(city) || categoryByWeather(w && w.desc) || '';
   try {

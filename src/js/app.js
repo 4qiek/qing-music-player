@@ -7,11 +7,9 @@ import { injectIcons } from './icons.js';
 import { eventBus } from './eventBus.js';
 import { switchView, initNavigation } from './view.js';
 import * as player from './player.js';
-import { initSearch } from './search.js';
 import { initLocalLibrary, renderLocalList } from './localLibrary.js';
 import { initEq } from './eq.js';
 import { initWeather } from './weather.js';
-import { initLogin } from './login.js';
 import { initCityPoem } from './cityPoem.js';
 import {
   initTheme,
@@ -21,7 +19,6 @@ import {
   toast
 } from './ui.js';
 import * as audioEngine from './audioEngine.js';
-import { initDiscover } from './discover.js';
 import { initFavorites } from './favorites.js';
 import { initHistory } from './history.js';
 import { initQueue } from './queue.js';
@@ -38,6 +35,8 @@ import { initMediaLib, scanMediaFolder } from './mediaLib.js';
 import { initPersistence, restoreState } from './persistence.js';
 import { initPlaylists } from './playlists.js';
 import { initCommander } from './commander.js';
+import { initAccent } from './accent.js';
+import { initRowActions } from './rowActions.js';
 
 export { switchView };
 
@@ -49,6 +48,7 @@ export function initApp() {
   // 1. 基础设施
   initGlobalErrorHandler();
   initTheme();
+  initAccent();
   initKeyboardShortcuts();
   showShortcutHint();
 
@@ -58,19 +58,16 @@ export function initApp() {
 
   // 3. 各功能模块
   initNavigation();
-  initSearch();
   initLocalLibrary();
   initEq();
   initWeather();
   initCityPoem();
-  initLogin();
   player.initAudioEvents();
 
   // 4. 新功能模块
   player.loadFavorites();
   player.loadHistory();
   player.renderPlayMode();
-  initDiscover();
   initFavorites();
   initHistory();
   initQueue();
@@ -86,21 +83,25 @@ export function initApp() {
   initPlaylists();
   initCommander();
   initPersistence();
+  initRowActions();
   bindFolderButtons();
 
   // 播放模式切换
   const modeBtn = document.getElementById('playModeBtn');
   if (modeBtn) modeBtn.addEventListener('click', player.cyclePlayMode);
 
+  // 空列表「选择本地文件」按钮（替代被 CSP 拦截的内联 onclick）
+  const emptyFileBtn = document.getElementById('emptyFileBtn');
+  if (emptyFileBtn) emptyFileBtn.addEventListener('click', () => {
+    const fi = document.getElementById('fileInput');
+    if (fi) fi.click();
+  });
+
   // 收藏按钮（主面板 + 详情页）
   const favBtn = document.getElementById('favBtn');
   if (favBtn) favBtn.addEventListener('click', () => player.toggleFavorite(store.get('currentTrack')));
   const pdFavBtn = document.getElementById('pdFavBtn');
   if (pdFavBtn) pdFavBtn.addEventListener('click', () => player.toggleFavorite(store.get('currentTrack')));
-
-  // 相似歌曲推荐
-  const simiBtn = document.getElementById('simiBtn');
-  if (simiBtn) simiBtn.addEventListener('click', () => player.addSimilar(store.get('currentTrack')));
 
   // 频谱可视化：播放详情页开关时启停
   const detail = document.getElementById('playerDetail');
@@ -145,9 +146,6 @@ export function initApp() {
     if (tapeToggle) tapeToggle.classList.toggle('active', value);
   });
 
-  // 8. 音质菜单
-  initQualityMenu();
-
   // 启动就绪
   console.log('[app] 清 初始化完成');
 }
@@ -158,25 +156,6 @@ function bindFolderButtons() {
   ids.forEach((id) => {
     const btn = document.getElementById(id);
     if (btn) btn.addEventListener('click', () => { scanMediaFolder(); });
-  });
-}
-
-function initQualityMenu() {
-  const qualityBtn = document.getElementById('qualityBtn');
-  const qualityMenu = document.getElementById('qualityMenu');
-  qualityBtn.addEventListener('click', (e) => {
-    e.stopPropagation();
-    qualityMenu.classList.toggle('show');
-  });
-  document.addEventListener('click', () => qualityMenu.classList.remove('show'));
-  qualityMenu.querySelectorAll('.q-item').forEach((item) => {
-    item.addEventListener('click', async () => {
-      qualityMenu.querySelectorAll('.q-item').forEach((i) => i.classList.remove('active'));
-      item.classList.add('active');
-      qualityBtn.innerHTML = item.textContent + ' <span style="font-size:8px">▼</span>';
-      await player.switchQuality(item.dataset.level);
-      qualityMenu.classList.remove('show');
-    });
   });
 }
 

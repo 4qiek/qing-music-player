@@ -8,7 +8,7 @@
  */
 import { store } from './store.js';
 import { eventBus } from './eventBus.js';
-import { toast } from './ui.js';
+import { toast, emptyIll } from './ui.js';
 import { apiClient } from './apiClient.js';
 import { fetchMatch, bindCoverFallback, cleanBookKeyword } from './metaMatch.js';
 import { saveProgress, getProgress, getReaderSettings, saveReaderSettings } from './persistence.js';
@@ -52,7 +52,7 @@ function renderBookList() {
   const sub = $('bookSub');
   if (sub) sub.textContent = books.length ? `共 ${books.length} 本书` : '导入 TXT / Markdown / EPUB，或选择文件夹自动扫描';
   if (!books.length) {
-    list.innerHTML = '<div class="empty-state"><div class="big-icon"><svg style="width:48px;height:48px"><use href="#i-book"/></svg></div><p>还没有导入书籍</p><p class="sub-hint">点击「导入书籍」或「添加文件夹」</p></div>';
+    list.innerHTML = `<div class="empty-state">${emptyIll('book')}<p class="es-title">还没有导入书籍</p><p class="es-sub">点击「导入书籍」或「添加文件夹」</p></div>`;
     return;
   }
   let html = '<div class="song-list-header"><span></span><span></span><span>书名</span><span>作者/年份</span><span>大小</span><span>操作</span></div>';
@@ -252,7 +252,7 @@ function showChapter(idx, restorePos) {
     : '<h2 class="br-h2">' + esc(ch.title) + '</h2>' + String(ch.text || '').split(/\n+/).map((p) => p.trim() ? '<p>' + esc(p) + '</p>' : '').join('');
   $('brChapterTitle').textContent = `${reader.idx + 1}/${reader.chapters.length} · ${ch.title}`;
   content.scrollTop = restorePos ? restorePos * content.scrollHeight : 0;
-  if ($('#brDrawer').style.display !== 'none') renderDrawer();
+  if ($('brDrawer').style.display !== 'none') renderDrawer();
   persistBookProgress();
 }
 

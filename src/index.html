@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https: qing-file:; media-src 'self' https: qing-file: blob:; connect-src 'self' https: wss:; font-src 'self' data:">
 <title>清</title>
 <link rel="stylesheet" href="./css/style.css">
 <link rel="stylesheet" href="./css/weather.css">
@@ -14,15 +15,6 @@
 <!-- ===== 顶部栏 ===== -->
 <div class="topbar">
   <img src="../assets/qing-logo.png" alt="清" style="width:32px;height:32px;object-fit:contain;margin-right:8px;flex-shrink:0;">
-  <div class="search-box">
-    <svg class="s-icon"><use href="#i-search"/></svg>
-    <input type="text" id="searchInput" placeholder="搜索歌曲、歌手..." aria-label="搜索歌曲或歌手">
-  </div>
-  <div class="platform-tabs" id="platformTabs">
-    <div class="platform-tab active" data-platform="netease" role="button" tabindex="0">网易云</div>
-    <div class="platform-tab" data-platform="qq" role="button" tabindex="0">QQ音乐</div>
-    <div class="platform-tab" data-platform="kugou" role="button" tabindex="0">酷狗</div>
-  </div>
   <div class="top-right">
     <div class="weather-widget" id="weatherWidget" title="单击查看天气动画 · 双击切换城市" role="button" tabindex="0" aria-label="查看天气">
       <span class="w-temp" id="wTemp">--°</span>
@@ -34,6 +26,21 @@
     <button class="theme-toggle" id="themeToggle" aria-label="切换深浅色主题">
       <svg><use id="themeIcon" href="#i-moon"/></svg>
     </button>
+    <div class="accent-select">
+      <button class="theme-toggle" id="accentToggle" title="点缀色" aria-label="自定义点缀色">
+        <svg><use href="#i-palette"/></svg>
+      </button>
+      <div class="accent-menu" id="accentMenu">
+        <div class="ac-swatches">
+          <span class="ac-sw" data-color="#0F6E56" style="--c:#0F6E56" title="青瓷" role="button" tabindex="0"></span>
+          <span class="ac-sw" data-color="#185FA5" style="--c:#185FA5" title="黛蓝" role="button" tabindex="0"></span>
+          <span class="ac-sw" data-color="#B3402A" style="--c:#B3402A" title="朱砂" role="button" tabindex="0"></span>
+          <span class="ac-sw" data-color="#BA7517" style="--c:#BA7517" title="琥珀" role="button" tabindex="0"></span>
+          <span class="ac-sw" data-color="#6B4FA0" style="--c:#6B4FA0" title="黛紫" role="button" tabindex="0"></span>
+        </div>
+        <label class="ac-custom"><input type="color" id="accentCustom" value="#0F6E56" aria-label="自定义点缀色">自定义颜色</label>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -66,16 +73,6 @@
       <div class="nav-item active" data-view="local" role="button" tabindex="0">
         <svg><use href="#i-home"/></svg> 本地音乐
       </div>
-      <div class="nav-item" data-view="search" role="button" tabindex="0">
-        <svg><use href="#i-search"/></svg> 在线搜索
-      </div>
-      <div class="nav-section">发现</div>
-      <div class="nav-item" data-view="toplist" role="button" tabindex="0">
-        <svg><use href="#i-trend"/></svg> 排行榜
-      </div>
-      <div class="nav-item" data-view="recommend" role="button" tabindex="0">
-        <svg><use href="#i-spark"/></svg> 每日推荐
-      </div>
       <div class="nav-section">我的</div>
       <div class="nav-item" data-view="favorites" role="button" tabindex="0">
         <svg><use href="#i-heart"/></svg> 我的收藏
@@ -88,10 +85,6 @@
       <button class="nav-item new-playlist-btn" id="newPlaylistBtn" title="新建歌单">
         <svg><use href="#i-plus"/></svg> 新建歌单
       </button>
-
-      <div class="user-card" id="userCard">
-        <button class="login-btn" id="loginBtn">登录网易云账号</button>
-      </div>
     </div>
 
     <!-- 城市诗句：全局氛围卡片，所有功能下都显示 -->
@@ -133,8 +126,7 @@
         <button class="ctrl-btn" id="nextBtn" title="下一曲 (N)" aria-label="下一曲"><svg><use href="#i-next"/></svg></button>
       </div>
       <div class="mode-row">
-        <button class="mode-btn" id="playModeBtn" title="播放模式（点击切换）" aria-label="切换播放模式"><svg id="playModeIcon" class="mode-icon" viewBox="0 0 24 24"><use href="#i-repeat"/></svg><span id="playModeLabel">列表循环</span></button>
-        <span class="mode-hint">Ctrl+Alt+Space 全局控制 · 空格播放</span>
+        <button class="mode-btn" id="playModeBtn" title="播放模式（点击切换）· Ctrl+Alt+Space 全局控制 · 空格播放" aria-label="切换播放模式"><svg id="playModeIcon" class="mode-icon" viewBox="0 0 24 24"><use href="#i-repeat"/></svg><span id="playModeLabel">列表循环</span></button>
       </div>
       <div class="progress-wrap">
         <span class="time-label" id="mainCurTime">00:00</span>
@@ -146,15 +138,6 @@
         <div class="volume-wrap">
           <button class="mute-btn" id="muteBtn" title="静音 (M)" aria-label="切换静音"><svg><use id="volumeIcon" href="#i-volume"/></svg></button>
           <input type="range" class="volume" id="volume" min="0" max="100" value="80" aria-label="音量 (↑↓)">
-        </div>
-        <div class="quality-select">
-          <button class="quality-btn" id="qualityBtn" aria-label="选择音质">标准 <span style="font-size:8px">▼</span></button>
-          <div class="quality-menu" id="qualityMenu">
-            <div class="q-item active" data-level="standard">标准</div>
-            <div class="q-item" data-level="higher">较高</div>
-            <div class="q-item" data-level="exhigh">极高</div>
-            <div class="q-item" data-level="lossless">无损</div>
-          </div>
         </div>
         <button class="icon-btn" id="eqToggle" title="均衡器" aria-label="打开均衡器"><svg><use href="#i-eq"/></svg></button>
         <button class="icon-btn" id="tapeToggle" title="磁带模式" aria-label="切换磁带音效"><svg><use href="#i-tape"/></svg></button>
@@ -183,20 +166,10 @@
           </div>
           <div class="song-list" id="localList">
             <div class="empty-state">
-              <div class="big-icon"><svg style="width:48px;height:48px"><use href="#i-music"/></svg></div>
-              <p>还没有导入音乐</p>
-              <button class="btn btn-primary" onclick="document.getElementById('fileInput').click()">选择本地文件</button>
-            </div>
-          </div>
-        </div>
-        <div id="view-search" style="display:none;">
-          <div class="content-header">
-            <div><h2>在线搜索</h2><div class="sub" id="searchSub">在顶部搜索框输入关键词开始搜索</div></div>
-          </div>
-          <div class="song-list" id="searchList">
-            <div class="empty-state">
-              <div class="big-icon"><svg style="width:48px;height:48px"><use href="#i-search"/></svg></div>
-              <p>搜索你喜欢的音乐</p>
+              <svg class="es-ill" viewBox="0 0 96 72" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="18" y="10" width="60" height="52" rx="8"/><path d="M44 44V26l14-3v18"/><circle cx="40" cy="44" r="4"/><circle cx="54" cy="41" r="4"/></svg>
+              <p class="es-title">还没有导入音乐</p>
+              <p class="es-sub">支持 MP3 / FLAC / WAV / OGG 等格式</p>
+              <button class="btn btn-primary" id="emptyFileBtn">选择本地文件</button>
             </div>
           </div>
         </div>
@@ -205,20 +178,6 @@
             <div><h2 id="playlistTitle">歌单</h2><div class="sub" id="playlistSub"></div></div>
           </div>
           <div class="song-list" id="playlistList"></div>
-        </div>
-        <div id="view-toplist" style="display:none;">
-          <div class="content-header">
-            <div><h2>排行榜</h2><div class="sub" id="toplistSub">网易云官方榜单，点击进入</div></div>
-            <button class="btn" id="toplistRefresh">刷新</button>
-          </div>
-          <div class="card-grid" id="toplistGrid"></div>
-        </div>
-        <div id="view-recommend" style="display:none;">
-          <div class="content-header">
-            <div><h2>每日推荐</h2><div class="sub" id="recommendSub">网易云热门推荐歌单，点击歌单查看</div></div>
-            <button class="btn" id="recommendRefresh">刷新</button>
-          </div>
-          <div class="card-grid" id="recommendGrid"></div>
         </div>
         <div id="view-favorites" style="display:none;">
           <div class="content-header">
@@ -299,6 +258,8 @@
 </div>
 
 <!-- ===== 底部迷你播放条 ===== -->
+<!-- 窄窗抽屉遮罩（≤980px 时点 .now-playing 展开播放抽屉） -->
+<div class="drawer-mask" id="drawerMask"></div>
 <div class="player-bar">
   <div class="now-playing" id="npExpand" title="展开播放页（Space 播放/暂停，↑↓ 音量，←→ 快进快退，N/P 切歌）" role="button" tabindex="0">
     <div class="np-cover" id="npCover">
@@ -358,7 +319,6 @@
         <div class="pd-song-artist" id="pdSongArtist">--</div>
         <div class="pd-actions">
           <button class="icon-btn fav-btn" id="pdFavBtn" title="收藏这首歌" aria-label="收藏这首歌"><svg><use href="#i-heart"/></svg></button>
-          <button class="icon-btn" id="simiBtn" title="推荐相似歌曲" aria-label="推荐相似歌曲"><svg><use href="#i-spark"/></svg></button>
         </div>
       </div>
     </div>
@@ -396,34 +356,6 @@
     <div class="wp-temp" id="wpTemp">--°</div>
     <div class="wp-desc" id="wpDesc">--</div>
     <div class="wp-range" id="wpRange">--</div>
-  </div>
-</div>
-
-<!-- ===== 登录弹窗 ===== -->
-<div class="modal-overlay" id="loginModal">
-  <div class="modal" role="dialog" aria-label="登录网易云音乐">
-    <h3>登录网易云音乐</h3>
-    <div class="modal-sub">登录后可同步你的歌单与收藏</div>
-    <div class="login-tabs">
-      <button class="login-tab active" data-tab="account" type="button">账号登录</button>
-      <button class="login-tab" data-tab="qr" type="button">扫码登录</button>
-    </div>
-    <div class="login-panel" id="loginAccountPanel">
-      <div class="form-group"><label for="loginPhone">手机号</label><input type="text" id="loginPhone" placeholder="请输入手机号"></div>
-      <div class="form-group"><label for="loginPass">密码</label><input type="password" id="loginPass" placeholder="请输入密码"></div>
-    </div>
-    <div class="login-panel" id="loginQrPanel" style="display:none;">
-      <div class="qr-box">
-        <img id="loginQrImg" alt="扫码登录二维码" style="display:none;">
-        <div class="qr-loading" id="loginQrLoading">二维码生成中…</div>
-        <div class="qr-status" id="loginQrStatus">打开网易云音乐 App 扫码登录</div>
-      </div>
-    </div>
-    <div class="error-msg" id="loginError" role="alert"></div>
-    <div class="modal-actions">
-      <button class="btn" id="loginCancel">取消</button>
-      <button class="btn btn-primary" id="loginSubmit">登录</button>
-    </div>
   </div>
 </div>
 

@@ -18,6 +18,7 @@
     height: 96px;
     padding: 8px 16px;
     text-align: center;
+    -webkit-app-region: drag;
   }
   .l-main {
     font-size: 21px;
@@ -77,6 +78,12 @@
     if (window.qingAPI && window.qingAPI.onLyricData) {
       window.qingAPI.onLyricData(render);
     }
+    // 悬停时允许拖动（关闭鼠标穿透），离开恢复穿透，避免遮挡下方操作
+    const setIgnore = (ignore) => {
+      if (window.qingAPI && window.qingAPI.lyricSetIgnore) window.qingAPI.lyricSetIgnore(ignore);
+    };
+    document.body.addEventListener('mouseenter', () => setIgnore(false));
+    document.body.addEventListener('mouseleave', () => setIgnore(true));
   })();
 </script>
 </body>

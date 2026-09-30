@@ -1,13 +1,13 @@
 {
   "name": "qing-player",
-  "version": "1.0.0",
-  "description": "清 - 灰白风万能播放器（音乐/视频/图片/书籍/浏览器）",
+  "version": "1.3.0",
+  "description": "清 - 灰白风万能播放器（本地音乐/视频/图片/书籍/浏览器）",
   "main": "main/index.js",
   "author": "Qing",
   "license": "MIT",
   "scripts": {
     "start": "electron .",
-    "build": "electron-builder --win --x64"
+    "dist": "electron-builder --win nsis --x64"
   },
   "devDependencies": {
     "electron": "^28.3.3",
@@ -16,13 +16,13 @@
   "dependencies": {
     "jszip": "^3.10.1",
     "music-metadata": "^8.0.0",
-    "NeteaseCloudMusicApi": "^4.1.1"
+    "NeteaseCloudMusicApi": "^4.32.0"
   },
   "build": {
     "appId": "com.qing.player",
     "productName": "清",
     "directories": {
-      "output": "dist"
+      "output": "../qing-dist-v4"
     },
     "files": [
       "main/**/*",
@@ -30,22 +30,33 @@
       "preload.js",
       "src/**/*",
       "assets/**/*",
+      "package.json",
       "node_modules/**/*"
     ],
     "win": {
       "target": [
         {
-          "target": "portable",
+          "target": "nsis",
           "arch": [
             "x64"
           ]
         }
       ],
       "icon": "assets/qing-icon.ico",
-      "artifactName": "清-${version}.exe"
+      "artifactName": "清-${version}-setup.${ext}"
     },
-    "portable": {
-      "artifactName": "清-${version}.exe"
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "清",
+      "installerLanguages": [
+        "zh_CN"
+      ],
+      "language": "2052",
+      "artifactName": "清-${version}-setup.${ext}"
     }
   }
 }

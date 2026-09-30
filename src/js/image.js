@@ -5,6 +5,7 @@
 import { store } from './store.js';
 import { escapeHtml } from './utils.js';
 import { eventBus } from './eventBus.js';
+import { emptyIll } from './ui.js';
 
 const $ = (id) => document.getElementById(id);
 
@@ -61,10 +62,14 @@ export function renderImageGrid() {
   if (!imgs.length) {
     grid.innerHTML = `
       <div class="empty-state" style="grid-column:1/-1">
-        <div class="big-icon"><svg style="width:48px;height:48px"><use href="#i-image"/></svg></div>
-        <p>还没有导入图片</p>
-        <button class="btn btn-primary" onclick="document.getElementById('imageFileInput').click()">选择本地图片</button>
+        ${emptyIll('image')}
+        <p class="es-title">还没有导入图片</p>
+        <p class="es-sub">导入本地图片，点击查看原图</p>
+        <button class="btn btn-primary" id="emptyImageBtn">选择本地图片</button>
       </div>`;
+    // 空状态按钮（替代被 CSP 拦截的内联 onclick）
+    const eb = $('emptyImageBtn');
+    if (eb) eb.addEventListener('click', () => $('imageFileInput').click());
     return;
   }
   grid.innerHTML = imgs.map((img, i) => `

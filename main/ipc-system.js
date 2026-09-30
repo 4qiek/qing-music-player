@@ -28,6 +28,8 @@ const KNOWN_PLAYERS = {
 
 // ========== SMTC PowerShell 脚本 ==========
 const SMTC_GET_SCRIPT = `
+# 清理上一次写入的旧 SMTC 封面，避免 %TEMP%\\smtc_*.jpg 无限堆积
+Get-ChildItem -Path $env:TEMP -Filter 'smtc_*.jpg' -ErrorAction SilentlyContinue | Remove-Item -Force -ErrorAction SilentlyContinue
 Add-Type -AssemblyName System.Runtime.WindowsRuntime
 $asTaskGeneric = [System.WindowsRuntimeSystemExtensions].GetMethods() | ? { $_.Name -eq 'AsTask' -and $_.IsGenericMethodDefinition -and $_.GetParameters().Count -eq 1 } | Select-Object -First 1
 function Await($op, $type) {
@@ -108,7 +110,7 @@ Write-Output '{"success":true}'
 
 function runPs(script, args) {
   return new Promise((resolve) => {
-    const tmpFile = path.join(os.tmpdir(), `smtc_${Date.now()}.ps1`);
+    const tmpFile = path.join(os.tmpdir(), `smtc_${Date.now()}_${Math.random().toString(36).slice(2)}.ps1`);
     fs.writeFileSync(tmpFile, script, 'utf8');
     const argList = ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', tmpFile];
     if (args) argList.push(...args);
@@ -125,7 +127,8 @@ function runPs(script, args) {
 // ========== 系统 EQ 常量 ==========
 const EQ_CONFIG_PATH = 'C:\\Program Files\\EqualizerAPO\\config\\config.txt';
 const EQ_INSTALL_PATH = 'C:\\Program Files\\EqualizerAPO';
-const EQ_FREQS = [31, 62, 125, 250, 500, 1000, 2000, 4000, 8000, 16000];
+// 与主进程同步渲染层 audioEngine.js 的十段频点（以渲染层 eq.js 实际使用的为准）
+const EQ_FREQS = [32, 64, 125, 250, 500, 1000, 2000, 4000, 8000, 16000];
 const EQ_DOWNLOAD_URL = 'https://github.com/TheFireKahuna/equalizerAPO64/releases/download/1.4.2_5/EqualizerAPO_Setup-x64-avx2.zip';
 
 function downloadFile(url, dest, redirects = 0) {
@@ -209,7 +212,7 @@ module.exports = function initSystemIpc(state) {
 $names = @('cloudmusic','QQMusic','QQMusicPlayer','KuGou','kugou','KwMusic','Spotify','AppleMusic','AppleMusic.Win','iTunes','MiguMusic','foobar2000','AIMP','Music.UI','Microsoft.Media.Player')
 Get-Process | Where-Object { $names -contains $_.ProcessName } | Select-Object ProcessName -Unique | ConvertTo-Json -Compress
 `;
-      const tmpFile = path.join(os.tmpdir(), `detect_${Date.now()}.ps1`);
+      const tmpFile = path.join(os.tmpdir(), `detect_${Date.now()}_${Math.random().toString(36).slice(2)}.ps1`);
       fs.writeFileSync(tmpFile, ps, 'utf8');
       execFile('powershell.exe', ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', tmpFile], { timeout: 5000 }, (err, stdout) => {
         try { fs.unlinkSync(tmpFile); } catch {}
@@ -259,7 +262,7 @@ if ($usbControllers) { $usbControllers | ForEach-Object { $devices += $_.Friendl
 $result = @{ connected = ($devices.Count -gt 0); devices = $devices }
 $result | ConvertTo-Json -Compress
 `;
-      const tmpFile = path.join(os.tmpdir(), `usbaudio_${Date.now()}.ps1`);
+      const tmpFile = path.join(os.tmpdir(), `usbaudio_${Date.now()}_${Math.random().toString(36).slice(2)}.ps1`);
       fs.writeFileSync(tmpFile, ps, 'utf8');
       execFile('powershell.exe', ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', tmpFile], { timeout: 8000 }, (err, stdout) => {
         try { fs.unlinkSync(tmpFile); } catch {}
@@ -290,12 +293,20 @@ $result | ConvertTo-Json -Compress
         cancelId: 1,
         title: '安装系统级 EQ',
         message: '即将下载并安装 Equalizer APO（系统级音频均衡器）',
-        detail: '该软件需要管理员权限，安装后会修改系统音频配置并重启音频服务。是否继续？'
+        detail: '下载来源：github.com/TheFireKahuna/equalizerAPO64\n该软件需要管理员权限，安装后会修改系统音频配置并重启音频服务。是否继续？'
       });
       if (response !== 0) return { error: '用户取消安装' };
       const zipPath = path.join(os.tmpdir(), 'EqualizerAPO_Setup.zip');
       const extractPath = path.join(os.tmpdir(), 'EqualizerAPO_Setup_extract');
-      if (!fs.existsSync(zipPath) || fs.statSync(zipPath).size < 1000000) { await downloadFile(EQ_DOWNLOAD_URL, zipPath); }
+      // 下载失败需清理已写入的临时文件，避免残留损坏的安装包
+      if (!fs.existsSync(zipPath) || fs.statSync(zipPath).size < 1000000) {
+        try {
+          await downloadFile(EQ_DOWNLOAD_URL, zipPath);
+        } catch (dlErr) {
+          try { fs.rmSync(zipPath, { force: true }); } catch {}
+          return { error: '下载失败: ' + (dlErr && dlErr.message ? dlErr.message : '未知错误') };
+        }
+      }
       if (fs.existsSync(extractPath)) fs.rmSync(extractPath, { recursive: true, force: true });
       fs.mkdirSync(extractPath, { recursive: true });
       await new Promise((resolve, reject) => {

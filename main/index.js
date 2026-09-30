@@ -19,7 +19,8 @@ const state = {
   tray: null,
   browserView: null,
   browserIncognito: true,
-  neteaseCookie: '',
+  isQuitting: false,
+  trayMinimizedNotified: false,
 };
 
 function createWindow() {
@@ -41,6 +42,25 @@ function createWindow() {
   });
   state.mainWindow.loadFile(path.join(__dirname, '..', 'src', 'index.html'));
   state.mainWindow.setMenuBarVisibility(false);
+
+  // 关闭窗口时最小化到托盘而非退出（托盘“退出”会置 isQuitting 后真正退出）
+  state.mainWindow.on('close', (e) => {
+    if (state.isQuitting) return;
+    e.preventDefault();
+    state.mainWindow.hide();
+    if (!state.trayMinimizedNotified) {
+      state.trayMinimizedNotified = true;
+      // 首次最小化：用托盘气泡提示一次
+      try {
+        if (state.tray && typeof state.tray.displayBalloon === 'function') {
+          state.tray.displayBalloon({
+            title: '清',
+            content: '已最小化到系统托盘，点击托盘图标可再次显示窗口'
+          });
+        }
+      } catch (err) { /* 某些平台无托盘气泡，忽略 */ }
+    }
+  });
 }
 
 app.whenReady().then(() => {
@@ -59,7 +79,8 @@ app.whenReady().then(() => {
 });
 
 app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') app.quit();
+  // 默认最小化到托盘，不退出（macOS 保留原行为：关闭即退出）
+  if (process.platform === 'darwin') app.quit();
 });
 
 module.exports = { state, createWindow };

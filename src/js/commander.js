@@ -1,6 +1,6 @@
 /**
  * commander.js — 全局命令面板（Ctrl+K / Ctrl+L 唤起）
- * 一处搜索：功能页切换、本地音乐/视频/书籍、收藏、常用命令、在线搜索跳转。
+ * 一处搜索：功能页切换、本地音乐/视频/书籍、收藏、常用命令。
  * 键盘：↑↓ 选择，Enter 执行，Esc 关闭。
  */
 import { store } from './store.js';
@@ -21,9 +21,6 @@ function buildCandidates(query) {
   // 1) 功能页 / 应用导航
   const navs = [
     { app: 'music', view: 'local', label: '本地音乐', icon: '#i-home' },
-    { app: 'music', view: 'search', label: '在线搜索', icon: '#i-search' },
-    { app: 'music', view: 'toplist', label: '排行榜', icon: '#i-trend' },
-    { app: 'music', view: 'recommend', label: '每日推荐', icon: '#i-spark' },
     { app: 'music', view: 'favorites', label: '我的收藏', icon: '#i-heart' },
     { app: 'music', view: 'history', label: '播放历史', icon: '#i-clock' },
     { app: 'video', view: 'video', label: '视频', icon: '#i-video' },
@@ -88,18 +85,6 @@ function buildCandidates(query) {
   ];
   cmds.forEach((c) => { if (!q || c.label.toLowerCase().includes(q)) out.push({ type: 'cmd', icon: c.icon, label: c.label, hint: '命令', run: c.run }); });
 
-  // 7) 在线搜索兜底
-  if (q) {
-    out.unshift({
-      type: 'online', icon: '#i-search', label: `在线搜索「${query.trim()}」`, hint: '网易云/QQ/酷狗',
-      run: () => {
-        const si = document.getElementById('searchInput');
-        si.value = query.trim();
-        gotoApp({ app: 'music', view: 'search' });
-        import('./search.js').then((m) => m.doSearch());
-      }
-    });
-  }
   return out.slice(0, 30);
 }
 
@@ -162,7 +147,7 @@ function build() {
     <div class="cmd-box" role="dialog" aria-label="命令面板">
       <div class="cmd-input-wrap">
         <svg style="width:16px;height:16px"><use href="#i-search"/></svg>
-        <input type="text" id="cmdInput" placeholder="搜索功能、本地音乐 / 视频 / 书籍，或输入关键词在线搜…" autocomplete="off">
+        <input type="text" id="cmdInput" placeholder="搜索功能、本地音乐 / 视频 / 书籍…" autocomplete="off">
       </div>
       <div class="cmd-list" id="cmdList"></div>
       <div class="cmd-foot">↑↓ 选择 · Enter 执行 · Esc 关闭 · Ctrl+K 唤起</div>

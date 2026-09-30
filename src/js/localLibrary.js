@@ -12,6 +12,7 @@ import { eventBus } from './eventBus.js';
 import { sleep, PLATFORM_LABEL, escapeHtml } from './utils.js';
 import { bindCoverFallback } from './metaMatch.js';
 import { enrichAudio } from './mediaLib.js';
+import { emptyIll } from './ui.js';
 
 const $ = (id) => document.getElementById(id);
 
@@ -95,7 +96,8 @@ export async function matchLocal(idx) {
   t.artist = hit.artist || t.artist;
   t.album = hit.album || t.album || '';
   t.cover = hit.cover || t.cover || '';
-  if (hit.duration) t.duration = hit.duration;
+  // 网易云返回时长为秒，本地列表 fmtDur 以毫秒展示，需换算
+  if (hit.duration) t.duration = hit.duration * 1000;
   store.set('localTracks', tracks);
   renderLocalList();
   return hit;
@@ -202,9 +204,9 @@ export function renderLocalList() {
   if (localTracks.length === 0) {
     el.innerHTML = `
       <div class="empty-state">
-        <div class="big-icon"><svg style="width:48px;height:48px"><use href="#i-music"/></svg></div>
-        <p>还没有导入音乐</p>
-        <p class="sub-hint">可「导入音乐」或「添加文件夹」自动扫描</p>
+        ${emptyIll('music')}
+        <p class="es-title">还没有导入音乐</p>
+        <p class="es-sub">可「导入音乐」或「添加文件夹」自动扫描</p>
       </div>`;
     _localRendered = 0;
     return;

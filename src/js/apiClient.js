@@ -6,18 +6,15 @@
  *  3. 网络失败自动重试（最多 3 次）
  */
 import { cacheGet, cacheSet, retry, sleep } from './utils.js';
+import { store } from './store.js';
 
 const api = window.qingAPI;
 
 /** 读类请求的缓存 TTL（毫秒） */
 const CACHE_TTL = {
-  search: 5 * 60 * 1000,      // 搜索 5 分钟
+  search: 5 * 60 * 1000,      // 匹配搜索 5 分钟
   lyric: 30 * 60 * 1000,      // 歌词 30 分钟
-  detail: 10 * 60 * 1000,
-  playlist: 10 * 60 * 1000,
-  playlistDetail: 10 * 60 * 1000,
-  weather: 15 * 60 * 1000,    // 天气 15 分钟
-  hot: 10 * 60 * 1000
+  weather: 15 * 60 * 1000     // 天气 15 分钟
 };
 
 /**
@@ -62,93 +59,17 @@ async function cachedRequest(cacheKey, fetcher, kind = 'search', opts = {}) {
 
 export const apiClient = {
   // ========== 网易云 ==========
+  // 在线音乐功能已移除，这里只保留两个「本地增强」能力：
+  //  1) 搜索：本地曲目按歌名匹配歌手 / 专辑 / 封面（localLibrary.matchLocal / matchAllLocal）
   neteaseSearch(keyword, opts = {}) {
     const key = `cache:netease:search:${keyword}`;
     return cachedRequest(key, () => api.neteaseSearch(keyword), 'search', opts);
   },
 
-  neteaseUrl(data, opts = {}) {
-    // 播放地址带时效性，不缓存
-    return withRetry(() => api.neteaseUrl(data), opts);
-  },
-
-  neteaseDetail(ids, opts = {}) {
-    const key = `cache:netease:detail:${Array.isArray(ids) ? ids.join(',') : ids}`;
-    return cachedRequest(key, () => api.neteaseDetail(ids), 'detail', opts);
-  },
-
+  //  2) 歌词：本地曲目匹配到 matchedId 后拉取在线歌词（lyric.loadLyric）
   neteaseLyric(id, opts = {}) {
     const key = `cache:netease:lyric:${id}`;
     return cachedRequest(key, () => api.neteaseLyric(id), 'lyric', opts);
-  },
-
-  neteaseLogin(data) {
-    return withRetry(() => api.neteaseLogin(data), { maxRetries: 1 });
-  },
-
-  neteaseQrKey() {
-    return withRetry(() => api.neteaseQrKey(), { maxRetries: 2 });
-  },
-  neteaseQrCreate(key) {
-    return withRetry(() => api.neteaseQrCreate(key), { maxRetries: 2 });
-  },
-  neteaseQrCheck(key) {
-    return api.neteaseQrCheck(key);
-  },
-  neteaseLoginStatus(cookie) {
-    return withRetry(() => api.neteaseLoginStatus(cookie), { maxRetries: 1 });
-  },
-
-  neteasePlaylist(uid, opts = {}) {
-    const key = `cache:netease:playlist:${uid}`;
-    return cachedRequest(key, () => api.neteasePlaylist(uid), 'playlist', opts);
-  },
-
-  neteasePlaylistDetail(id, opts = {}) {
-    const key = `cache:netease:playlistDetail:${id}`;
-    return cachedRequest(key, () => api.neteasePlaylistDetail(id), 'playlistDetail', opts);
-  },
-
-  // ========== 发现页 ==========
-  neteaseToplist(opts = {}) {
-    const key = 'cache:netease:toplist';
-    return cachedRequest(key, () => api.neteaseToplist(), 'playlist', opts);
-  },
-
-  neteaseTopDetail(idx, opts = {}) {
-    const key = `cache:netease:topDetail:${idx}`;
-    return cachedRequest(key, () => api.neteaseTopDetail(idx), 'playlistDetail', opts);
-  },
-
-  neteasePersonalized(limit = 30, opts = {}) {
-    const key = `cache:netease:personalized:${limit}`;
-    return cachedRequest(key, () => api.neteasePersonalized(limit), 'playlist', opts);
-  },
-
-  neteaseSimi(id, opts = {}) {
-    // 相似歌曲变化快，短缓存 3 分钟
-    const key = `cache:netease:simi:${id}`;
-    return cachedRequest(key, () => api.neteaseSimi(id), 'search', opts);
-  },
-
-  // ========== QQ音乐 ==========
-  qqSearch(keyword, opts = {}) {
-    const key = `cache:qq:search:${keyword}`;
-    return cachedRequest(key, () => api.qqSearch(keyword), 'search', opts);
-  },
-
-  qqUrl(songmid, opts = {}) {
-    return withRetry(() => api.qqUrl(songmid), opts);
-  },
-
-  // ========== 酷狗 ==========
-  kugouSearch(keyword, opts = {}) {
-    const key = `cache:kugou:search:${keyword}`;
-    return cachedRequest(key, () => api.kugouSearch(keyword), 'search', opts);
-  },
-
-  kugouUrl(hash, albumId, opts = {}) {
-    return withRetry(() => api.kugouUrl(hash, albumId), opts);
   },
 
   // ========== 通用元数据（豆瓣：kind=book 书籍 / movie 影视） ==========
@@ -159,7 +80,7 @@ export const apiClient = {
 
   // ========== 天气 ==========
   getWeather(city, opts = {}) {
-    const target = city || '扬州';
+    const target = city || store.get('weatherCity') || '扬州';
     const key = `cache:weather:${target}`;
     return cachedRequest(key, () => api.getWeather(target), 'weather', opts);
   },

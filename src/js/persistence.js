@@ -11,8 +11,21 @@ const STATE_KEY = 'qing-state-v2';
 const PROGRESS_KEY = 'qing-progress-v1';
 const READER_KEY = 'qing-reader-v1';
 
-const SCALAR_KEYS = ['volume', 'playMode', 'quality', 'eqValues'];
+const SCALAR_KEYS = ['volume', 'playMode', 'quality', 'eqValues', 'weatherCity'];
 const LIB_KEYS = ['localTracks', 'localVideos', 'localImages', 'localBooks'];
+
+// 已移除的在线视图（在线搜索 / 排行榜 / 每日推荐），恢复时回退到默认视图
+const REMOVED_VIEWS = ['search', 'toplist', 'recommend'];
+const DEFAULT_VIEW = 'local';
+
+/**
+ * 把已失效的视图名回退到默认视图
+ * @param {string} view 视图名
+ * @returns {string} 可用视图名
+ */
+function sanitizeView(view) {
+  return (view && !REMOVED_VIEWS.includes(view)) ? view : DEFAULT_VIEW;
+}
 
 // 仅保留可序列化的路径型条目
 function pickPathItems(list) {
@@ -52,8 +65,8 @@ export function restoreState() {
 export function getLastView() {
   try {
     const d = JSON.parse(localStorage.getItem(STATE_KEY) || 'null');
-    return d && d.lastView;
-  } catch (e) { return null; }
+    return sanitizeView(d && d.lastView);
+  } catch (e) { return DEFAULT_VIEW; }
 }
 
 // ===== 进度（视频断点 / 书籍位置） =====

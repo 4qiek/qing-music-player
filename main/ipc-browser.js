@@ -12,6 +12,17 @@ module.exports = function initBrowserIpc(state) {
     }
   }
 
+  /** 清理无痕 session 的存储数据（关闭 / 重建前调用，避免会话残留） */
+  function clearIncognitoSession(wc) {
+    if (!wc) return;
+    try {
+      const ses = wc.getSession();
+      if (ses && ses !== session.defaultSession) {
+        ses.clearStorageData().catch(() => {});
+      }
+    } catch (e) { /* ignore */ }
+  }
+
   async function handleBrowserDownload(e, item) {
     e.preventDefault();
     const { canceled, filePath } = await dialog.showSaveDialog(state.mainWindow, {
@@ -100,6 +111,7 @@ module.exports = function initBrowserIpc(state) {
     const cur = state.browserView && !state.browserView.webContents.isDestroyed()
       ? state.browserView.webContents.getURL() : '';
     if (state.browserView) {
+      clearIncognitoSession(state.browserView.webContents);
       try { state.mainWindow.removeBrowserView(state.browserView); } catch {}
       try { state.browserView.webContents.destroy(); } catch {}
     }
@@ -116,6 +128,7 @@ module.exports = function initBrowserIpc(state) {
       try { state.mainWindow.removeBrowserView(state.browserView); } catch {}
     }
     if (state.browserView) {
+      clearIncognitoSession(state.browserView.webContents);
       try { state.browserView.webContents.destroy(); } catch {}
     }
     state.browserView = null;

@@ -7,7 +7,7 @@
  */
 import { store } from './store.js';
 import { eventBus } from './eventBus.js';
-import { toast } from './ui.js';
+import { toast, emptyIll } from './ui.js';
 import { apiClient } from './apiClient.js';
 import { fetchMatch, bindCoverFallback, cleanVideoKeyword } from './metaMatch.js';
 import { saveProgress, getProgress } from './persistence.js';
@@ -108,7 +108,7 @@ function renderVideoList() {
   const sub = $('videoSub');
   if (sub) sub.textContent = videos.length ? `共 ${videos.length} 个视频` : '导入本地视频，或选择文件夹自动扫描';
   if (!videos.length) {
-    list.innerHTML = '<div class="empty-state"><div class="big-icon"><svg style="width:48px;height:48px"><use href="#i-video"/></svg></div><p>还没有导入视频</p><p class="sub-hint">点击「导入视频」或「添加文件夹」</p></div>';
+    list.innerHTML = `<div class="empty-state">${emptyIll('video')}<p class="es-title">还没有导入视频</p><p class="es-sub">点击「导入视频」或「添加文件夹」</p></div>`;
     return;
   }
   const { groups, movies } = groupVideos(videos);

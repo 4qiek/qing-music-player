@@ -18,6 +18,8 @@ const KIND_KEY = {
   book: 'localBooks'
 };
 const KIND_LABEL = { audio: '音乐', video: '视频', image: '图片', book: '书籍' };
+// 与 persistence.js 的 LIB_KEYS 保持一致：启动时需把这些库里的本地路径补登记白名单
+const LIB_KEYS = ['localTracks', 'localVideos', 'localImages', 'localBooks'];
 
 function itemKey(it) {
   if (it.path) return 'p:' + it.path;
@@ -52,6 +54,8 @@ function pushItems(kind, items) {
 function fileToItem(f) {
   return {
     origin: 'path',
+    // 必须标记 platform，否则播放队列/上一首下一首会把它当成在线曲目去请求接口
+    platform: 'local',
     path: f.path,
     name: f.name,
     ext: f.ext,
@@ -132,7 +136,40 @@ export async function addDownloadToLibrary(savePath) {
   return info.kind;
 }
 
+/** 收集所有已入库的本地路径（仅路径型条目，手动选入的 File 为会话级 blob） */
+function collectStoredPaths() {
+  const out = [];
+  LIB_KEYS.forEach((key) => {
+    const list = store.get(key) || [];
+    list.forEach((it) => {
+      if (it && it.origin === 'path' && it.path) out.push(it.path);
+    });
+  });
+  return out;
+}
+
+/**
+ * 启动时把已入库的本地路径批量补登记到主进程 qing-file 白名单。
+ * 主进程白名单默认只登记「本次会话主动选择的文件夹 / 单文件」，
+ * 重启后从 store 恢复的曲目拿不到白名单会 403，故需在此回补。
+ * 全链路 try/catch：失败不能阻断启动。
+ * @returns {Promise<number>} 登记数量
+ */
+export async function registerStoredPaths() {
+  try {
+    if (!window.qingAPI || typeof window.qingAPI.registerMediaPaths !== 'function') return 0;
+    const paths = collectStoredPaths();
+    if (!paths.length) return 0;
+    const res = await window.qingAPI.registerMediaPaths(paths);
+    return (res && res.count) || 0;
+  } catch (e) {
+    return 0;
+  }
+}
+
 export function initMediaLib() {
+  // 重启后补登记已入库路径（异步、不阻塞启动；播放失败时 player.js 还有一次自愈重试）
+  registerStoredPaths();
   if (window.qingAPI && window.qingAPI.onMediaFolderNew) {
     window.qingAPI.onMediaFolderNew((f) => {
       if (!f || !f.kind) return;
@@ -142,5 +179,5 @@ export function initMediaLib() {
 }
 
 export default {
-  scanMediaFolder, enrichAudio, addDownloadToLibrary, initMediaLib, pushItems, fileToItem
+  scanMediaFolder, enrichAudio, addDownloadToLibrary, initMediaLib, registerStoredPaths, pushItems, fileToItem
 };

@@ -3,9 +3,10 @@
  * 职责：渲染最近播放（localStorage 持久化，最多 60 条），支持清空。
  */
 import { store } from './store.js';
-import { renderSongList } from './search.js';
+import { renderSongList } from './trackRow.js';
 import { clearHistory } from './player.js';
 import { formatTime } from './utils.js';
+import { emptyIll } from './ui.js';
 
 const $ = (id) => document.getElementById(id);
 
@@ -14,7 +15,7 @@ function renderHistory() {
   const hist = store.get('history') || [];
   $('historySub').textContent = hist.length ? `最近播放 ${hist.length} 首` : '最近播放的歌曲会显示在这里';
   if (!hist.length) {
-    list.innerHTML = '<div class="empty-state"><div class="big-icon"><svg style="width:48px;height:48px"><use href="#i-clock"/></svg></div><p>还没有播放记录</p></div>';
+    list.innerHTML = `<div class="empty-state">${emptyIll('clock')}<p class="es-title">还没有播放记录</p><p class="es-sub">最近播放的歌曲会显示在这里</p></div>`;
     return;
   }
   store.set('searchResults', hist);

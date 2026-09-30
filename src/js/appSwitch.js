@@ -6,10 +6,9 @@ import { store } from './store.js';
 import { switchView } from './view.js';
 import { openBrowser } from './browser.js';
 
-// 视图 → 所属应用
+// 视图 → 所属应用（在线搜索 / 排行榜 / 每日推荐三个音乐视图已移除）
 const APP_OF_VIEW = {
-  local: 'music', search: 'music', playlist: 'music',
-  toplist: 'music', recommend: 'music', favorites: 'music', history: 'music',
+  local: 'music', playlist: 'music', favorites: 'music', history: 'music',
   video: 'video', image: 'image', book: 'book'
 };
 
@@ -58,11 +57,10 @@ function activateApp(app, view) {
   // 音乐子导航显隐
   $('musicNav').style.display = app === 'music' ? '' : 'none';
 
-  // 音乐专属 UI 只在音乐应用显示：
-  // 顶部搜索框 / 平台标签 / 左侧播放面板 / 底部播放条
-  // （天气与城市诗句是全局氛围，所有功能都保留）
+  // 音乐专属 UI 只在音乐应用显示：左侧播放面板 / 底部播放条
+  // （顶部搜索框与平台标签已随在线音乐功能一起移除）
   const musicOnly = app === 'music';
-  document.querySelectorAll('.search-box, .platform-tabs, .player-bar').forEach((el) => {
+  document.querySelectorAll('.player-bar').forEach((el) => {
     el.style.display = musicOnly ? '' : 'none';
   });
   const panelLeft = document.querySelector('.panel-left');

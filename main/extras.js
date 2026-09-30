@@ -34,6 +34,12 @@ module.exports = function initExtras(state) {
   ipcMain.on('lyric:update', (e, data) => {
     if (state.lyricWindow && !state.lyricWindow.isDestroyed()) state.lyricWindow.webContents.send('lyric:data', data);
   });
+  // 桌面歌词窗口悬停可拖动、离开则穿透：由渲染层 mouseenter/leave 通知切换 ignore
+  ipcMain.on('lyric:setIgnore', (e, ignore) => {
+    if (state.lyricWindow && !state.lyricWindow.isDestroyed()) {
+      try { state.lyricWindow.setIgnoreMouseEvents(!!ignore, { forward: true }); } catch (e) { /* ignore */ }
+    }
+  });
 
   // ---------- 迷你模式（带过渡动画） ----------
   ipcMain.on('window:mini', (e, on) => {
@@ -91,7 +97,7 @@ module.exports = function initExtras(state) {
         { type: 'separator' },
         { label: '开机自启', type: 'checkbox', checked: app.getLoginItemSettings().openAtLogin, click: (item) => { app.setLoginItemSettings({ openAtLogin: item.checked }); } },
         { type: 'separator' },
-        { label: '退出', click: () => { app.quit(); } }
+        { label: '退出', click: () => { state.isQuitting = true; app.quit(); } }
       ]);
       state.tray.setContextMenu(menu);
       state.tray.on('click', () => toggleMainWindow());

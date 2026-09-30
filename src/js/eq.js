@@ -55,6 +55,15 @@ export function initEq() {
     store.set('eqValues', values);
   });
 
+  // 恢复上次持久化的 EQ（滑块 UI 与预设下拉同步）
+  const savedEq = store.get('eqValues') || EQ_PRESETS.flat;
+  setBandValues(bands, savedEq);
+  let matchedPreset = 'custom';
+  for (const [name, vals] of Object.entries(EQ_PRESETS)) {
+    if (vals.length === savedEq.length && vals.every((v, i) => v === savedEq[i])) { matchedPreset = name; break; }
+  }
+  $('eqPresets').value = matchedPreset;
+
   $('eqPresets').addEventListener('change', (e) => {
     const vals = EQ_PRESETS[e.target.value];
     if (vals) {

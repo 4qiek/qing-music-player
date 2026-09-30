@@ -4,7 +4,8 @@
  */
 import { store } from './store.js';
 import { apiClient } from './apiClient.js';
-import { formatTime } from './utils.js';
+import { formatTime, escapeHtml } from './utils.js';
+import { isLocalTrack } from './trackUtil.js';
 
 /** 歌词解析结果缓存（key: 歌曲id+类型，避免同一首歌反复解析） */
 const lyricCache = new Map();
@@ -59,8 +60,9 @@ export async function loadLyric(track, lyricEl) {
   let lyricData = [];
   // 网易云歌曲直接用 id；本地歌曲若已在线匹配，则用 matchedId 拉取在线歌词
   let lyricId = null;
+  // 用 isLocalTrack 而非 platform === 'local'：历史落盘的本地条目没有 platform 字段
   if (track.platform === 'netease') lyricId = track.id;
-  else if (track.platform === 'local' && track.matchedId) lyricId = track.matchedId;
+  else if (isLocalTrack(track) && track.matchedId) lyricId = track.matchedId;
 
   if (lyricId) {
     try {
@@ -82,7 +84,7 @@ export async function loadLyric(track, lyricEl) {
   }
 
   // 本地曲目：在线歌词缺失时回退到音频内嵌歌词（ID3 USLT/LYRICS）
-  if (lyricData.length === 0 && track.platform === 'local' && track.embeddedLyric) {
+  if (lyricData.length === 0 && isLocalTrack(track) && track.embeddedLyric) {
     const parsed = cachedParseLRC('embed:' + (track.path || track.name || track.id), track.embeddedLyric);
     if (parsed.length) {
       lyricData = parsed;
@@ -104,7 +106,7 @@ export async function loadLyric(track, lyricEl) {
     return;
   }
   lyricEl.innerHTML = lyricData
-    .map((l, i) => `<div class="lyric-line" data-idx="${i}">${l.text.replace(/\n/g, '<br>')}</div>`)
+    .map((l, i) => `<div class="lyric-line" data-idx="${i}">${escapeHtml(l.text).replace(/\n/g, '<br>')}</div>`)
     .join('');
   lyricEl.style.transform = 'translateY(0)';
 }

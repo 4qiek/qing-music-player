@@ -3,8 +3,10 @@
  * 职责：展示当前队列，支持点击播放、移除、清空、上下移动排序。
  */
 import { store } from './store.js';
-import { playOnline, toggleFavorite, isFavorite } from './player.js';
+import { playQueueIndex, toggleFavorite, isFavorite } from './player.js';
 import { escapeHtml, PLATFORM_LABEL } from './utils.js';
+import { emptyIll } from './ui.js';
+import { isLocalTrack } from './trackUtil.js';
 
 const $ = (id) => document.getElementById(id);
 
@@ -13,7 +15,7 @@ function renderQueue() {
   const queue = store.get('currentQueue') || [];
   const curIdx = store.get('currentIndex');
   if (!queue.length) {
-    list.innerHTML = '<div class="empty-state" style="padding:24px 0"><p>播放队列是空的</p></div>';
+    list.innerHTML = `<div class="empty-state" style="padding:24px 0">${emptyIll('music')}<p class="es-title">播放队列是空的</p></div>`;
     return;
   }
   let html = '';
@@ -23,7 +25,7 @@ function renderQueue() {
       <span class="q-idx">${i + 1}</span>
       <span class="q-name">${active ? '<svg style="width:12px;height:12px;color:var(--accent)"><use href="#i-volume"/></svg> ' : ''}${escapeHtml(t.name)}</span>
       <span class="q-artist">${escapeHtml(t.artist || '')}</span>
-      <span class="q-tag">${PLATFORM_LABEL[t.platform] || ''}</span>
+      <span class="q-tag">${isLocalTrack(t) ? '本地' : (PLATFORM_LABEL[t.platform] || '')}</span>
       <span class="q-ops">
         <button class="q-move-up" title="上移" data-action="up">↑</button>
         <button class="q-remove" title="移除" data-action="remove">✕</button>
@@ -36,8 +38,7 @@ function renderQueue() {
     const idx = parseInt(row.dataset.idx, 10);
     row.addEventListener('click', (e) => {
       if (e.target.closest('.q-ops')) return;
-      store.set('searchResults', queue);
-      playOnline(idx);
+      playQueueIndex(idx);
     });
     row.querySelector('[data-action="up"]').addEventListener('click', (e) => {
       e.stopPropagation();

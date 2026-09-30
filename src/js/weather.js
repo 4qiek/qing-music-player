@@ -156,11 +156,10 @@ function getProvince(city) {
 }
 
 function getSavedCity() {
-  try { return localStorage.getItem(CITY_STORAGE_KEY) || '扬州'; }
-  catch { return '扬州'; }
+  return store.get('weatherCity') || '扬州';
 }
 function saveCity(city) {
-  try { localStorage.setItem(CITY_STORAGE_KEY, city); } catch {}
+  if (city) store.set('weatherCity', city);
 }
 
 function weekdayOf(dateStr) {
@@ -431,6 +430,9 @@ export function initWeather() {
     renderWeatherScene();
     weatherPage.classList.add('show');
   });
+
+  // 双击天气小组件快速切换城市
+  $('weatherWidget').addEventListener('dblclick', () => openCityModal());
 
   $('wpClose').addEventListener('click', () => {
     stopParticles();
