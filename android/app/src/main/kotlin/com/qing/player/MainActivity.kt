@@ -1,6 +1,7 @@
 package com.qing.player
 
 import android.Manifest
+import android.content.Context
 import android.graphics.Color
 import android.os.Build
 import android.os.Bundle
@@ -24,6 +25,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.core.view.WindowCompat
@@ -33,6 +35,7 @@ import com.qing.player.player.PlayerViewModel
 import com.qing.player.ui.QingApp
 import com.qing.player.ui.theme.HeadlineSerifStyle
 import com.qing.player.ui.theme.QingTheme
+import com.qing.player.util.LocaleHelper
 import com.qing.player.util.Permissions
 
 /**
@@ -45,6 +48,18 @@ import com.qing.player.util.Permissions
  */
 class MainActivity : ComponentActivity() {
 
+    /**
+     * 应用内语言在这里生效：包一层带指定 Locale 的 Context。
+     * 它只在 Activity **创建**时走一次，所以设置里改完语言后必须
+     * recreate 才能立刻看到（LanguageSwitch 那边负责调用）。
+     */
+    override fun attachBaseContext(newBase: Context?) {
+        val wrapped = newBase?.let {
+            LocaleHelper.apply(it, SettingsStore.getInstance(it).language)
+        } ?: newBase
+        super.attachBaseContext(wrapped)
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -56,13 +71,19 @@ class MainActivity : ComponentActivity() {
         setContent {
             val viewModel: PlayerViewModel = viewModel()
             val themeMode by viewModel.themeMode.collectAsState()
+            val fontFamily by viewModel.fontFamily.collectAsState()
+            val fontScale by viewModel.fontScale.collectAsState()
             val darkTheme = when (themeMode) {
                 SettingsStore.THEME_DARK -> true
                 SettingsStore.THEME_LIGHT -> false
                 else -> androidx.compose.foundation.isSystemInDarkTheme()
             }
 
-            QingTheme(darkTheme = darkTheme) {
+            QingTheme(
+                darkTheme = darkTheme,
+                fontScale = fontScale,
+                useSerif = fontFamily != SettingsStore.FONT_SANS
+            ) {
                 var permissionGranted by remember {
                     mutableStateOf(Permissions.hasAudioPermission(this@MainActivity))
                 }
@@ -121,16 +142,16 @@ private fun PermissionGate(onRequest: () -> Unit) {
         verticalArrangement = Arrangement.Center
     ) {
         Text(
-            text = "需要读取音乐权限",
+            text = stringResource(R.string.permission_audio_title),
             style = HeadlineSerifStyle,
             color = MaterialTheme.colorScheme.onBackground,
             textAlign = TextAlign.Center
         )
         Text(
             text = if (isAndroid13) {
-                "「清」需要 READ_MEDIA_AUDIO 权限才能建立曲库；通知权限用于在通知栏显示播放控制。"
+                stringResource(R.string.permission_audio_message_13)
             } else {
-                "「清」需要 READ_EXTERNAL_STORAGE 权限才能读取设备上的音乐文件。"
+                stringResource(R.string.permission_audio_message_legacy)
             },
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -144,7 +165,7 @@ private fun PermissionGate(onRequest: () -> Unit) {
                 containerColor = MaterialTheme.colorScheme.primary
             )
         ) {
-            Text("授予权限")
+            Text(stringResource(R.string.grant))
         }
     }
 }

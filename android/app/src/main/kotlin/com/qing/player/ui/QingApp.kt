@@ -28,6 +28,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavDestination.Companion.hierarchy
@@ -36,6 +37,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.qing.player.R
 import com.qing.player.player.PlayerViewModel
 import com.qing.player.ui.component.MiniPlayer
 import com.qing.player.ui.screen.AlbumsScreen
@@ -64,7 +66,7 @@ object Route {
 
 private data class BottomTab(
     val route: String,
-    val label: String,
+    val labelRes: Int,
     val icon: ImageVector
 )
 
@@ -91,14 +93,19 @@ fun QingApp(viewModel: PlayerViewModel) {
     }
     val showBottomBar = currentRoute in browRoutes
 
-    val tabs = remember {
-        listOf(
-            BottomTab(Route.SONGS, "歌曲", Icons.Default.MusicNote),
-            BottomTab(Route.ALBUMS, "专辑", Icons.Default.Album),
-            BottomTab(Route.ARTISTS, "艺术家", Icons.Default.Person),
-            BottomTab(Route.FOLDERS, "文件夹", Icons.Default.Folder),
-            BottomTab(Route.PLAYLISTS, "歌单", Icons.Default.QueueMusic)
-        )
+    // 「文件夹」默认不出现在底部标签栏——按目录听歌是小众需求，
+    // 入口收在设置里（设置 → 浏览 → 按文件夹浏览），想要的人可以在设置里把它放回底部。
+    val showFolderTab by viewModel.showFolderTab.collectAsState()
+    val tabs = remember(showFolderTab) {
+        buildList {
+            add(BottomTab(Route.SONGS, R.string.nav_songs, Icons.Default.MusicNote))
+            add(BottomTab(Route.ALBUMS, R.string.nav_albums, Icons.Default.Album))
+            add(BottomTab(Route.ARTISTS, R.string.nav_artists, Icons.Default.Person))
+            if (showFolderTab) {
+                add(BottomTab(Route.FOLDERS, R.string.nav_folders, Icons.Default.Folder))
+            }
+            add(BottomTab(Route.PLAYLISTS, R.string.nav_playlists, Icons.Default.QueueMusic))
+        }
     }
 
     Scaffold(
@@ -106,7 +113,7 @@ fun QingApp(viewModel: PlayerViewModel) {
             CenterAlignedTopAppBar(
                 title = {
                     Text(
-                        text = "清",
+                        text = stringResource(R.string.app_name),
                         style = TitleSerifStyle,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
@@ -114,10 +121,10 @@ fun QingApp(viewModel: PlayerViewModel) {
                 },
                 actions = {
                     IconButton(onClick = { navController.navigate(Route.EQUALIZER) }) {
-                        Icon(Icons.Default.GraphicEq, contentDescription = "均衡器")
+                        Icon(Icons.Default.GraphicEq, contentDescription = stringResource(R.string.nav_equalizer))
                     }
                     IconButton(onClick = { navController.navigate(Route.SETTINGS) }) {
-                        Icon(Icons.Default.Settings, contentDescription = "设置")
+                        Icon(Icons.Default.Settings, contentDescription = stringResource(R.string.nav_settings))
                     }
                 },
                 colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
@@ -158,8 +165,8 @@ fun QingApp(viewModel: PlayerViewModel) {
                                         restoreState = true
                                     }
                                 },
-                                icon = { Icon(tab.icon, contentDescription = tab.label) },
-                                label = { Text(tab.label, style = MaterialTheme.typography.labelSmall) },
+                                icon = { Icon(tab.icon, contentDescription = stringResource(tab.labelRes)) },
+                                label = { Text(stringResource(tab.labelRes), style = MaterialTheme.typography.labelSmall) },
                                 colors = NavigationBarItemDefaults.colors(
                                     selectedIconColor = extended.accent,
                                     selectedTextColor = extended.accent,
@@ -219,7 +226,9 @@ fun QingApp(viewModel: PlayerViewModel) {
             composable(Route.SETTINGS) {
                 SettingsScreen(
                     viewModel = viewModel,
-                    onBack = { navController.popBackStack() }
+                    onBack = { navController.popBackStack() },
+                    // 文件夹页的入口：默认不占底部标签栏，但设置里始终能进
+                    onOpenFolders = { navController.navigate(Route.FOLDERS) }
                 )
             }
             composable(Route.PLAYER) {

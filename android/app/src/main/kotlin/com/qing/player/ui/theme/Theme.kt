@@ -6,6 +6,7 @@ import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.Dp
@@ -94,9 +95,18 @@ private val DarkScheme = darkColorScheme(
 @Composable
 fun QingTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
+    fontScale: Float = 1.0f,
+    useSerif: Boolean = true,
     content: @Composable () -> Unit
 ) {
     val colorScheme = if (darkTheme) DarkScheme else LightScheme
+    // 字体设置来自设置页：风格（衬线/黑体）与字号缩放。
+    // 计算放在这里而不是每次重组时做——同一个 scale/family 只算一次。
+    val family = serifOrSans(useSerif)
+    val type = remember(fontScale, useSerif) { buildType(fontScale, family) }
+    val typography = remember(fontScale, useSerif) {
+        buildTypography(fontScale, family, type.headline)
+    }
     val extended = if (darkTheme) {
         QingExtendedColors(
             textSecondary = QingColor.TextSecondaryDark,
@@ -117,10 +127,13 @@ fun QingTheme(
         )
     }
 
-    CompositionLocalProvider(LocalQingExtendedColors provides extended) {
+    CompositionLocalProvider(
+        LocalQingExtendedColors provides extended,
+        LocalQingType provides type
+    ) {
         MaterialTheme(
             colorScheme = colorScheme,
-            typography = QingTypography,
+            typography = typography,
             content = content
         )
     }

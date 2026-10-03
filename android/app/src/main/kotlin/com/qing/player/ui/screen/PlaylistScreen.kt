@@ -34,8 +34,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.qing.player.R
 import com.qing.player.data.Song
 import com.qing.player.player.PlayerViewModel
 import com.qing.player.ui.component.EmptyState
@@ -72,7 +74,7 @@ fun PlaylistScreen(
         ) {
             Icon(Icons.Filled.Add, contentDescription = null, tint = extended.accent)
             Text(
-                text = "新建歌单",
+                text = stringResource(R.string.new_playlist),
                 style = MaterialTheme.typography.labelLarge,
                 color = extended.accent,
                 modifier = Modifier.padding(start = QingDimen.SpaceS)
@@ -82,7 +84,10 @@ fun PlaylistScreen(
 
         if (selectedId == null) {
             if (playlists.isEmpty()) {
-                EmptyState(title = "还没有歌单", message = "点上方「新建歌单」，把喜欢的曲目收在一起。")
+                EmptyState(
+                    title = stringResource(R.string.empty_playlist),
+                    message = stringResource(R.string.empty_playlist_msg)
+                )
             } else {
                 LazyColumn(Modifier.fillMaxSize()) {
                     items(playlists, key = { it.id }) { playlist ->
@@ -103,7 +108,7 @@ fun PlaylistScreen(
                                 overflow = TextOverflow.Ellipsis
                             )
                             IconButton(onClick = { viewModel.deletePlaylist(playlist.id) }) {
-                                Icon(Icons.Filled.Delete, contentDescription = "删除歌单")
+                                Icon(Icons.Filled.Delete, contentDescription = stringResource(R.string.delete_playlist))
                             }
                         }
                         Divider(color = extended.divider, thickness = 0.5.dp)
@@ -125,13 +130,13 @@ fun PlaylistScreen(
         var name by remember { mutableStateOf("") }
         AlertDialog(
             onDismissRequest = { showCreateDialog = false },
-            title = { Text("新建歌单", style = MaterialTheme.typography.titleSmall) },
+            title = { Text(stringResource(R.string.new_playlist), style = MaterialTheme.typography.titleSmall) },
             text = {
                 OutlinedTextField(
                     value = name,
                     onValueChange = { name = it },
                     singleLine = true,
-                    placeholder = { Text("歌单名称") },
+                    placeholder = { Text(stringResource(R.string.playlist_name_hint)) },
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedBorderColor = extended.accent,
                         unfocusedBorderColor = extended.outline
@@ -143,10 +148,10 @@ fun PlaylistScreen(
                     val trimmed = name.trim()
                     if (trimmed.isNotEmpty()) viewModel.createPlaylist(trimmed)
                     showCreateDialog = false
-                }) { Text("创建") }
+                }) { Text(stringResource(R.string.create)) }
             },
             dismissButton = {
-                TextButton(onClick = { showCreateDialog = false }) { Text("取消") }
+                TextButton(onClick = { showCreateDialog = false }) { Text(stringResource(R.string.cancel)) }
             }
         )
     }
@@ -175,10 +180,10 @@ private fun PlaylistDetail(
             verticalAlignment = Alignment.CenterVertically
         ) {
             IconButton(onClick = onBack) {
-                Icon(Icons.Filled.ArrowBack, contentDescription = "返回")
+                Icon(Icons.Filled.ArrowBack, contentDescription = stringResource(R.string.back))
             }
             Text(
-                text = "${songs.size} 首",
+                text = stringResource(R.string.playlist_count, songs.size),
                 style = MaterialTheme.typography.bodySmall,
                 color = extended.textSecondary,
                 modifier = Modifier.weight(1f)
@@ -191,12 +196,15 @@ private fun PlaylistDetail(
                     }
                 }
             ) {
-                Icon(Icons.Filled.PlayArrow, contentDescription = "播放全部")
+                Icon(Icons.Filled.PlayArrow, contentDescription = stringResource(R.string.play_all))
             }
         }
 
         if (songs.isEmpty()) {
-            EmptyState(title = "歌单为空", message = "在播放页或歌曲列表里把曲目加进来。")
+            EmptyState(
+                title = stringResource(R.string.empty_playlist_detail_title),
+                message = stringResource(R.string.empty_playlist_detail_msg)
+            )
         } else {
             LazyColumn(Modifier.fillMaxSize()) {
                 itemsIndexed(
@@ -216,7 +224,7 @@ private fun PlaylistDetail(
                         IconButton(onClick = { viewModel.removeSongFromPlaylist(playlistId, song.id) }) {
                             Icon(
                                 Icons.Filled.Delete,
-                                contentDescription = "从歌单移除",
+                                contentDescription = stringResource(R.string.remove_from_playlist),
                                 tint = extended.textSecondary
                             )
                         }

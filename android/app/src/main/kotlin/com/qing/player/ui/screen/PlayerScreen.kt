@@ -51,12 +51,14 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.media3.common.Player
+import com.qing.player.R
 import com.qing.player.data.Song
 import com.qing.player.player.PlayerViewModel
 import com.qing.player.ui.component.AlbumArt
@@ -104,10 +106,10 @@ fun PlayerScreen(
             verticalAlignment = Alignment.CenterVertically
         ) {
             IconButton(onClick = onBack) {
-                Icon(Icons.Filled.ArrowBack, contentDescription = "返回")
+                Icon(Icons.Filled.ArrowBack, contentDescription = stringResource(R.string.back))
             }
             Text(
-                text = "正在播放",
+                text = stringResource(R.string.now_playing),
                 style = MaterialTheme.typography.labelLarge,
                 color = MaterialTheme.colorScheme.onBackground
             )
@@ -116,7 +118,7 @@ fun PlayerScreen(
         if (current == null) {
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 Text(
-                    text = "还没有选择曲目",
+                    text = stringResource(R.string.no_song_selected),
                     style = SubtitleSerifStyle,
                     color = extended.textSecondary
                 )
@@ -140,7 +142,7 @@ fun PlayerScreen(
     if (current != null && showSleepDialog) {
         AlertDialog(
             onDismissRequest = { showSleepDialog = false },
-            title = { Text("睡眠定时", style = MaterialTheme.typography.titleSmall) },
+            title = { Text(stringResource(R.string.sleep_timer), style = MaterialTheme.typography.titleSmall) },
             text = {
                 Column {
                     listOf(15, 30, 60).forEach { minutes ->
@@ -151,7 +153,7 @@ fun PlayerScreen(
                             },
                             modifier = Modifier.fillMaxWidth()
                         ) {
-                            Text("$minutes 分钟后暂停")
+                            Text(stringResource(R.string.sleep_after_minutes, minutes))
                         }
                     }
                     TextButton(
@@ -161,12 +163,12 @@ fun PlayerScreen(
                         },
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Text("取消定时")
+                        Text(stringResource(R.string.cancel_timer))
                     }
                 }
             },
             confirmButton = {
-                TextButton(onClick = { showSleepDialog = false }) { Text("关闭") }
+                TextButton(onClick = { showSleepDialog = false }) { Text(stringResource(R.string.close)) }
             }
         )
     }
@@ -174,10 +176,10 @@ fun PlayerScreen(
     if (current != null && showPlaylistDialog) {
         AlertDialog(
             onDismissRequest = { showPlaylistDialog = false },
-            title = { Text("加入歌单", style = MaterialTheme.typography.titleSmall) },
+            title = { Text(stringResource(R.string.add_to_playlist), style = MaterialTheme.typography.titleSmall) },
             text = {
                 if (playlists.isEmpty()) {
-                    Text("还没有歌单，先去「歌单」页新建一个。")
+                    Text(stringResource(R.string.no_playlist_hint))
                 } else {
                     LazyColumn {
                         itemsIndexed(playlists) { _, playlist ->
@@ -195,7 +197,7 @@ fun PlayerScreen(
                 }
             },
             confirmButton = {
-                TextButton(onClick = { showPlaylistDialog = false }) { Text("关闭") }
+                TextButton(onClick = { showPlaylistDialog = false }) { Text(stringResource(R.string.close)) }
             }
         )
     }
@@ -224,7 +226,8 @@ private fun PlayerBody(
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
             ) {
                 AlbumArt(
-                    uri = song.albumArtUri,
+                    // 优先用联网补全的封面，没有再回到 MediaStore 的内嵌封面
+                    model = song.artworkModel,
                     size = 200.dp,
                     cornerRadius = QingDimen.RadiusPanel,
                     modifier = Modifier.padding(QingDimen.SpaceS)
@@ -282,7 +285,7 @@ private fun PlayerBody(
             ) {
                 Icon(
                     Icons.Filled.Shuffle,
-                    contentDescription = "随机播放",
+                    contentDescription = stringResource(R.string.shuffle),
                     tint = if (shuffle) extended.accent else MaterialTheme.colorScheme.onBackground
                 )
             }
@@ -290,7 +293,7 @@ private fun PlayerBody(
                 onClick = viewModel::previous,
                 modifier = Modifier.size(QingDimen.MinTouchTarget)
             ) {
-                Icon(Icons.Filled.SkipPrevious, contentDescription = "上一曲")
+                Icon(Icons.Filled.SkipPrevious, contentDescription = stringResource(R.string.previous))
             }
 
             // 主播放键：深色实心圆，画面唯一重色块
@@ -305,7 +308,9 @@ private fun PlayerBody(
             ) {
                 Icon(
                     imageVector = if (isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
-                    contentDescription = if (isPlaying) "暂停" else "播放",
+                    contentDescription = if (isPlaying) {
+                        stringResource(R.string.pause)
+                    } else stringResource(R.string.play),
                     modifier = Modifier.size(32.dp)
                 )
             }
@@ -314,7 +319,7 @@ private fun PlayerBody(
                 onClick = viewModel::next,
                 modifier = Modifier.size(QingDimen.MinTouchTarget)
             ) {
-                Icon(Icons.Filled.SkipNext, contentDescription = "下一曲")
+                Icon(Icons.Filled.SkipNext, contentDescription = stringResource(R.string.next))
             }
             IconButton(
                 onClick = viewModel::cycleRepeatMode,
@@ -325,9 +330,9 @@ private fun PlayerBody(
                         Icons.Filled.RepeatOne
                     } else Icons.Filled.Repeat,
                     contentDescription = when (repeatMode) {
-                        Player.REPEAT_MODE_ONE -> "单曲循环"
-                        Player.REPEAT_MODE_ALL -> "列表循环"
-                        else -> "顺序播放"
+                        Player.REPEAT_MODE_ONE -> stringResource(R.string.repeat_one)
+                        Player.REPEAT_MODE_ALL -> stringResource(R.string.repeat_all)
+                        else -> stringResource(R.string.repeat_off)
                     },
                     tint = if (repeatMode == Player.REPEAT_MODE_OFF) {
                         MaterialTheme.colorScheme.onBackground
@@ -347,27 +352,27 @@ private fun PlayerBody(
             IconButton(onClick = { viewModel.toggleFavorite(song) }) {
                 Icon(
                     imageVector = if (isFavorite) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
-                    contentDescription = "收藏",
+                    contentDescription = stringResource(R.string.favorite),
                     tint = if (isFavorite) {
                         extended.accent
                     } else MaterialTheme.colorScheme.onBackground
                 )
             }
             IconButton(onClick = onShowPlaylistDialog) {
-                Icon(Icons.Filled.PlaylistAdd, contentDescription = "加入歌单")
+                Icon(Icons.Filled.PlaylistAdd, contentDescription = stringResource(R.string.add_to_playlist))
             }
             IconButton(onClick = onShowSleepDialog) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
                         Icons.Filled.Timer,
-                        contentDescription = "睡眠定时",
+                        contentDescription = stringResource(R.string.sleep_timer),
                         tint = if (sleepRemaining > 0) {
                             extended.accent
                         } else MaterialTheme.colorScheme.onBackground
                     )
                     if (sleepRemaining > 0) {
                         Text(
-                            text = " ${sleepRemaining / 60_000}分",
+                            text = stringResource(R.string.sleep_remaining_minutes, sleepRemaining / 60_000),
                             style = MaterialTheme.typography.labelSmall,
                             color = extended.accent
                         )
@@ -470,7 +475,7 @@ private fun LyricsPanel(
         if (lines.isEmpty()) {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 Text(
-                    text = "暂无歌词\n（支持同目录同名 .lrc 与内嵌歌词）",
+                    text = stringResource(R.string.no_lyrics_hint),
                     style = MaterialTheme.typography.bodySmall,
                     color = extended.textSecondary,
                     textAlign = TextAlign.Center

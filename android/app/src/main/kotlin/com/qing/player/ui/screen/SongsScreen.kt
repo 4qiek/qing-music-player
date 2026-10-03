@@ -19,7 +19,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.qing.player.R
 import com.qing.player.data.Song
 import com.qing.player.player.PlayerViewModel
 import com.qing.player.ui.component.EmptyState
@@ -60,7 +62,7 @@ fun SongsScreen(
                 .fillMaxWidth()
                 .padding(horizontal = QingDimen.SpaceM, vertical = QingDimen.SpaceS),
             placeholder = {
-                Text("搜索歌曲 / 艺术家 / 专辑", style = MaterialTheme.typography.bodySmall)
+                Text(stringResource(R.string.search_hint), style = MaterialTheme.typography.bodySmall)
             },
             singleLine = true,
             textStyle = MaterialTheme.typography.bodyMedium,
@@ -73,11 +75,11 @@ fun SongsScreen(
 
         if (filtered.isEmpty()) {
             EmptyState(
-                title = "曲库为空",
+                title = stringResource(R.string.empty_library),
                 message = if (songs.isEmpty()) {
-                    "未扫描到音乐文件，请在设置中重新扫描或检查权限。"
+                    stringResource(R.string.empty_library_msg)
                 } else {
-                    "没有匹配「$query」的曲目。"
+                    stringResource(R.string.no_match, query)
                 }
             )
         } else {

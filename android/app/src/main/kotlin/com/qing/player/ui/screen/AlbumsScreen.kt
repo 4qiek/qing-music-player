@@ -19,8 +19,10 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.qing.player.R
 import com.qing.player.data.AlbumGroup
 import com.qing.player.player.PlayerViewModel
 import com.qing.player.ui.component.AlbumArt
@@ -39,7 +41,10 @@ fun AlbumsScreen(
     val albums by viewModel.albums.collectAsState()
 
     if (albums.isEmpty()) {
-        EmptyState(title = "没有专辑", message = "扫描到的曲目会按专辑自动分组。")
+        EmptyState(
+            title = stringResource(R.string.empty_albums_title),
+            message = stringResource(R.string.empty_albums_msg)
+        )
         return
     }
 
@@ -74,9 +79,9 @@ private fun AlbumCard(album: AlbumGroup, onClick: () -> Unit) {
                 .padding(QingDimen.SpaceS),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // 专辑封面：用第一首歌的 albumArtUri
+            // 专辑封面：用第一首歌的封面（补全过的优先）
             AlbumArt(
-                uri = album.songs.firstOrNull()?.albumArtUri,
+                model = album.songs.firstOrNull()?.artworkModel,
                 size = 108.dp,
                 cornerRadius = QingDimen.RadiusControl
             )
@@ -89,7 +94,7 @@ private fun AlbumCard(album: AlbumGroup, onClick: () -> Unit) {
                 modifier = Modifier.padding(top = QingDimen.SpaceS)
             )
             Text(
-                text = "${album.artist} · ${album.songs.size} 首",
+                text = stringResource(R.string.album_meta, album.artist, album.songs.size),
                 style = SubtitleSerifStyle,
                 color = extended.textSecondary,
                 maxLines = 1,

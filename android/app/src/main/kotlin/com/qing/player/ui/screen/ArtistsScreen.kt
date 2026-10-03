@@ -20,8 +20,10 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.qing.player.R
 import com.qing.player.data.ArtistGroup
 import com.qing.player.player.PlayerViewModel
 import com.qing.player.ui.component.AlbumArt
@@ -40,7 +42,10 @@ fun ArtistsScreen(
     val artists by viewModel.artists.collectAsState()
 
     if (artists.isEmpty()) {
-        EmptyState(title = "没有艺术家", message = "扫描到的曲目会按艺术家自动分组。")
+        EmptyState(
+            title = stringResource(R.string.empty_artists_title),
+            message = stringResource(R.string.empty_artists_msg)
+        )
         return
     }
 
@@ -77,7 +82,7 @@ private fun ArtistRow(artist: ArtistGroup, onClick: () -> Unit) {
             horizontalArrangement = Arrangement.spacedBy(QingDimen.SpaceM)
         ) {
             AlbumArt(
-                uri = artist.songs.firstOrNull()?.albumArtUri,
+                model = artist.songs.firstOrNull()?.artworkModel,
                 size = QingDimen.ArtSize
             )
             Column(modifier = Modifier.weight(1f)) {
@@ -89,7 +94,7 @@ private fun ArtistRow(artist: ArtistGroup, onClick: () -> Unit) {
                     overflow = TextOverflow.Ellipsis
                 )
                 Text(
-                    text = "${artist.albumCount} 张专辑 · ${artist.songs.size} 首",
+                    text = stringResource(R.string.artist_meta, artist.albumCount, artist.songs.size),
                     style = SubtitleSerifStyle,
                     color = extended.textSecondary
                 )

@@ -32,7 +32,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringArrayResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.qing.player.R
 import com.qing.player.data.SettingsStore
 import com.qing.player.player.PlayerViewModel
 import com.qing.player.ui.theme.LocalQingExtendedColors
@@ -66,10 +69,10 @@ fun EqualizerScreen(
             verticalAlignment = Alignment.CenterVertically
         ) {
             IconButton(onClick = onBack) {
-                Icon(Icons.Filled.ArrowBack, contentDescription = "返回")
+                Icon(Icons.Filled.ArrowBack, contentDescription = stringResource(R.string.back))
             }
             Text(
-                text = "均衡器",
+                text = stringResource(R.string.eq_title),
                 style = MaterialTheme.typography.labelLarge,
                 modifier = Modifier.weight(1f),
                 color = MaterialTheme.colorScheme.onBackground
@@ -93,7 +96,7 @@ fun EqualizerScreen(
                 .padding(QingDimen.SpaceM)
         ) {
             Text(
-                text = "这是安卓系统级 EQ，与厂商自带的私有音效引擎无关（后者仅自带播放器可用）。",
+                text = stringResource(R.string.eq_notice),
                 style = MaterialTheme.typography.labelSmall,
                 color = extended.textSecondary,
                 modifier = Modifier.padding(QingDimen.SpaceM)
@@ -107,7 +110,7 @@ fun EqualizerScreen(
                 .padding(horizontal = QingDimen.SpaceM),
             horizontalArrangement = Arrangement.spacedBy(QingDimen.SpaceXS)
         ) {
-            SettingsStore.PRESET_NAMES.forEachIndexed { index, name ->
+            stringArrayResource(R.array.eq_preset_names).forEachIndexed { index, name ->
                 FilterChip(
                     selected = presetIndex == index,
                     onClick = { viewModel.applyEqPreset(index) },

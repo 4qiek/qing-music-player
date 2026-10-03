@@ -3,6 +3,7 @@ package com.qing.player.data
 import android.content.Context
 import android.provider.MediaStore
 import android.util.Log
+import com.qing.player.R
 import com.qing.player.util.LrcParser
 import java.io.File
 
@@ -22,6 +23,9 @@ class MusicRepository(private val context: Context) {
         val selection = "${MediaStore.Audio.Media.IS_MUSIC} != 0 AND ${MediaStore.Audio.Media.DURATION} > ?"
         val selectionArgs = arrayOf(MIN_DURATION_MS.toString())
         val sortOrder = "${MediaStore.Audio.Media.TITLE} COLLATE NOCASE ASC"
+        val unknownTitle = context.getString(R.string.unknown_title)
+        val unknownArtist = context.getString(R.string.unknown_artist)
+        val unknownAlbum = context.getString(R.string.unknown_album)
 
         runCatching {
             context.contentResolver.query(
@@ -46,9 +50,9 @@ class MusicRepository(private val context: Context) {
                     if (path.isBlank()) continue
                     songs += Song(
                         id = cursor.getLong(idCol),
-                        title = normalize(cursor.getString(titleCol), UNKNOWN_TITLE),
-                        artist = normalize(cursor.getString(artistCol), UNKNOWN_ARTIST),
-                        album = normalize(cursor.getString(albumCol), UNKNOWN_ALBUM),
+                        title = normalize(cursor.getString(titleCol), unknownTitle),
+                        artist = normalize(cursor.getString(artistCol), unknownArtist),
+                        album = normalize(cursor.getString(albumCol), unknownAlbum),
                         albumId = cursor.getLong(albumIdCol),
                         duration = cursor.getLong(durationCol),
                         path = path,
@@ -64,19 +68,21 @@ class MusicRepository(private val context: Context) {
     }
 
     /** 专辑维度：按 albumId 聚合，艺术家取该专辑中出现最多的 */
-    fun groupAlbums(songs: List<Song>): List<AlbumGroup> =
-        songs.groupBy { it.albumId }
+    fun groupAlbums(songs: List<Song>): List<AlbumGroup> {
+        val unknownArtist = context.getString(R.string.unknown_artist)
+        return songs.groupBy { it.albumId }
             .map { (albumId, list) ->
                 val sorted = list.sortedBy { it.title }
                 AlbumGroup(
                     albumId = albumId,
                     name = sorted.first().album,
                     artist = sorted.groupingBy { it.artist }.eachCount()
-                        .maxByOrNull { it.value }?.key ?: UNKNOWN_ARTIST,
+                        .maxByOrNull { it.value }?.key ?: unknownArtist,
                     songs = sorted
                 )
             }
             .sortedBy { it.name.lowercase() }
+    }
 
     /** 艺术家维度 */
     fun groupArtists(songs: List<Song>): List<ArtistGroup> =
@@ -159,10 +165,6 @@ class MusicRepository(private val context: Context) {
     companion object {
         private const val TAG = "MusicRepository"
         private const val MIN_DURATION_MS = 30_000L
-
-        const val UNKNOWN_TITLE = "未知曲目"
-        const val UNKNOWN_ARTIST = "未知艺术家"
-        const val UNKNOWN_ALBUM = "未知专辑"
 
         @Volatile
         private var instance: MusicRepository? = null

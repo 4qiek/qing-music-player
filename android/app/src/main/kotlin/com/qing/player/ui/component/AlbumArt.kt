@@ -1,6 +1,5 @@
 package com.qing.player.ui.component
 
-import android.net.Uri
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
@@ -21,12 +20,13 @@ import com.qing.player.ui.theme.QingDimen
 /**
  * 专辑封面。
  *
- * 有封面时用 Coil 加载 MediaStore 的 albumArtUri；
+ * [model] 既可以是 MediaStore 的 content:// Uri，也可以是联网补全来的 http(s) 地址——
+ * Coil 两种都支持，所以这里统一用 Any? 接。
  * 无封面 / 加载失败时回退到极简音符占位，不显示破碎图片。
  */
 @Composable
 fun AlbumArt(
-    uri: Uri?,
+    model: Any?,
     modifier: Modifier = Modifier,
     size: Dp = QingDimen.ArtSize,
     cornerRadius: Dp = QingDimen.RadiusControl
@@ -39,11 +39,11 @@ fun AlbumArt(
             .background(MaterialTheme.colorScheme.surfaceVariant),
         contentAlignment = Alignment.Center
     ) {
-        if (uri == null) {
+        if (model == null) {
             PlaceholderNote(size)
         } else {
             AsyncImage(
-                model = uri,
+                model = model,
                 contentDescription = null,
                 modifier = Modifier.size(size),
                 contentScale = ContentScale.Crop,

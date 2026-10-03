@@ -18,6 +18,15 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
     <!-- 实体按键/耳机线控：MediaSession 通过 MediaSessionService 接收，无需额外权限 -->
 
+    <!--
+      联网补全封面与歌词（设置 → 在线匹配，可关闭）。
+      只在用户开启时才会发起请求，用途仅限于按歌名/艺术家补全本机曲目的封面与歌词。
+      ACCESS_NETWORK_STATE 是为了「没网就别发请求」——批量补全时如果不管网络状态，
+      每一首都要等满 6 秒超时，一轮 200 首就是二十几分钟，完全是浪费。
+    -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+
     <!-- 不依赖 Google Play 服务；同时声明硬件/服务非必需，避免被应用商店过滤 -->
     <uses-feature
         android:name="android.hardware.touchscreen"

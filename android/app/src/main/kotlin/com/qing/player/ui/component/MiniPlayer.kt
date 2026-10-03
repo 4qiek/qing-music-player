@@ -24,8 +24,10 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.qing.player.R
 import com.qing.player.data.Song
 import com.qing.player.player.PlayerViewModel
 import com.qing.player.ui.theme.LocalQingExtendedColors
@@ -80,7 +82,7 @@ fun MiniPlayer(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(QingDimen.SpaceS)
             ) {
-                AlbumArt(uri = song.albumArtUri, size = 40.dp)
+                AlbumArt(model = song.artworkModel, size = 40.dp)
 
                 Column(
                     modifier = Modifier.weight(1f),
@@ -109,7 +111,11 @@ fun MiniPlayer(
                 ) {
                     Icon(
                         imageVector = if (isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
-                        contentDescription = if (isPlaying) "暂停" else "播放",
+                        contentDescription = if (isPlaying) {
+                            stringResource(R.string.pause)
+                        } else {
+                            stringResource(R.string.play)
+                        },
                         tint = MaterialTheme.colorScheme.onSurface
                     )
                 }
@@ -119,7 +125,7 @@ fun MiniPlayer(
                 ) {
                     Icon(
                         imageVector = Icons.Filled.SkipNext,
-                        contentDescription = "下一曲",
+                        contentDescription = stringResource(R.string.next),
                         tint = MaterialTheme.colorScheme.onSurface
                     )
                 }

@@ -20,8 +20,10 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.qing.player.R
 import com.qing.player.data.FolderGroup
 import com.qing.player.player.PlayerViewModel
 import com.qing.player.ui.component.EmptyState
@@ -44,7 +46,10 @@ fun FoldersScreen(
     val folders by viewModel.folders.collectAsState()
 
     if (folders.isEmpty()) {
-        EmptyState(title = "没有文件夹", message = "扫描到的曲目会按所在目录自动分组。")
+        EmptyState(
+            title = stringResource(R.string.empty_folders_title),
+            message = stringResource(R.string.empty_folders_msg)
+        )
         return
     }
 
@@ -88,7 +93,7 @@ private fun FolderRow(folder: FolderGroup, onClick: () -> Unit) {
                 overflow = TextOverflow.Ellipsis
             )
             Text(
-                text = "${folder.path} · ${folder.songs.size} 首",
+                text = stringResource(R.string.folder_meta, folder.path, folder.songs.size),
                 style = SubtitleSerifStyle,
                 color = extended.textSecondary,
                 maxLines = 1,

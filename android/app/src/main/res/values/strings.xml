@@ -2,6 +2,14 @@
 <resources>
     <string name="app_name">清</string>
 
+    <!-- 通用 -->
+    <string name="back">返回</string>
+    <string name="close">关闭</string>
+    <string name="cancel">取消</string>
+    <string name="create">创建</string>
+    <string name="delete">删除</string>
+    <string name="grant">授予权限</string>
+
     <!-- 导航 -->
     <string name="nav_songs">歌曲</string>
     <string name="nav_albums">专辑</string>
@@ -13,10 +21,43 @@
 
     <!-- 权限 -->
     <string name="permission_audio_title">需要读取音乐权限</string>
-    <string name="permission_audio_message">「清」需要读取设备上的音频文件才能建立曲库。请授予权限。</string>
-    <string name="permission_notification_message">为了在通知栏显示播放控制，请允许发送通知。</string>
-    <string name="grant">授予</string>
-    <string name="cancel">取消</string>
+    <string name="permission_audio_message_13">「清」需要 READ_MEDIA_AUDIO 权限才能建立曲库；通知权限用于在通知栏显示播放控制。</string>
+    <string name="permission_audio_message_legacy">「清」需要 READ_EXTERNAL_STORAGE 权限才能读取设备上的音乐文件。</string>
+
+    <!-- 歌曲 -->
+    <string name="search_hint">搜索歌曲 / 艺术家 / 专辑</string>
+    <string name="empty_library">曲库为空</string>
+    <string name="empty_library_msg">未扫描到音乐文件，请在设置中重新扫描或检查权限。</string>
+    <string name="no_match">没有匹配「%1$s」的曲目。</string>
+
+    <!-- 专辑 -->
+    <string name="empty_albums_title">没有专辑</string>
+    <string name="empty_albums_msg">扫描到的曲目会按专辑自动分组。</string>
+    <string name="album_meta">%1$s · %2$d 首</string>
+
+    <!-- 艺术家 -->
+    <string name="empty_artists_title">没有艺术家</string>
+    <string name="empty_artists_msg">扫描到的曲目会按艺术家自动分组。</string>
+    <string name="artist_meta">%1$d 张专辑 · %2$d 首</string>
+
+    <!-- 文件夹 -->
+    <string name="empty_folders_title">没有文件夹</string>
+    <string name="empty_folders_msg">扫描到的曲目会按所在目录自动分组。</string>
+    <string name="folder_meta">%1$s · %2$d 首</string>
+
+    <!-- 歌单 -->
+    <string name="new_playlist">新建歌单</string>
+    <string name="empty_playlist">还没有歌单</string>
+    <string name="empty_playlist_msg">点上方「新建歌单」，把喜欢的曲目收在一起。</string>
+    <string name="delete_playlist">删除歌单</string>
+    <string name="playlist_name_hint">歌单名称</string>
+    <string name="playlist_count">%1$d 首</string>
+    <string name="play_all">播放全部</string>
+    <string name="empty_playlist_detail_title">歌单为空</string>
+    <string name="empty_playlist_detail_msg">在播放页或歌曲列表里把曲目加进来。</string>
+    <string name="remove_from_playlist">从歌单移除</string>
+    <string name="add_to_playlist">加入歌单</string>
+    <string name="no_playlist_hint">还没有歌单，先去「歌单」页新建一个。</string>
 
     <!-- 播放 -->
     <string name="play">播放</string>
@@ -28,37 +69,78 @@
     <string name="repeat_all">列表循环</string>
     <string name="repeat_one">单曲循环</string>
     <string name="lyrics">歌词</string>
-    <string name="no_lyrics">暂无歌词</string>
+    <string name="now_playing">正在播放</string>
+    <string name="no_song_selected">还没有选择曲目</string>
+    <string name="favorite">收藏</string>
     <string name="sleep_timer">睡眠定时</string>
+    <string name="sleep_after_minutes">%1$d 分钟后暂停</string>
+    <string name="cancel_timer">取消定时</string>
+    <string name="sleep_remaining_minutes"> %1$d分</string>
+    <string name="no_lyrics_hint">暂无歌词\n（支持同目录同名 .lrc，也可联网匹配）</string>
 
-    <!-- 歌单 -->
-    <string name="new_playlist">新建歌单</string>
-    <string name="playlist_name_hint">歌单名称</string>
-    <string name="add_to_playlist">添加到歌单</string>
-    <string name="delete">删除</string>
-    <string name="empty_playlist">还没有歌单</string>
-
-    <!-- EQ -->
+    <!-- 均衡器 -->
     <string name="eq_title">均衡器</string>
     <string name="eq_notice">这是安卓系统级 EQ，与厂商自带的私有音效引擎无关（后者仅自带播放器可用）。</string>
     <string name="eq_preset">预设</string>
     <string name="eq_custom">自定义</string>
+    <string-array name="eq_preset_names">
+        <item>默认</item>
+        <item>流行</item>
+        <item>摇滚</item>
+        <item>爵士</item>
+        <item>古典</item>
+        <item>电子</item>
+        <item>人声</item>
+        <item>重低音</item>
+    </string-array>
 
     <!-- 设置 -->
-    <string name="settings_scan">重新扫描曲库</string>
-    <string name="settings_theme">主题</string>
+    <string name="settings_title">设置</string>
+    <string name="section_appearance">外观</string>
+    <string name="theme">主题</string>
     <string name="theme_light">浅色</string>
     <string name="theme_dark">深色</string>
     <string name="theme_system">跟随系统</string>
-    <string name="settings_about">关于</string>
-    <string name="about_text">清 · 灰白极简播放器\n本地音乐 · 完全离线 · 无广告</string>
+    <string name="language">语言</string>
+    <string name="lang_system">跟随系统</string>
+    <string name="lang_zh">中文</string>
+    <string name="lang_en">English</string>
+    <string name="font">字体</string>
+    <string name="font_style">字体风格</string>
+    <string name="font_serif">衬线</string>
+    <string name="font_sans">黑体</string>
+    <string name="font_size">字号</string>
+    <string name="font_small">小</string>
+    <string name="font_normal">标准</string>
+    <string name="font_large">大</string>
+    <string name="font_xlarge">超大</string>
+
+    <string name="section_library">曲库</string>
+    <string name="library_count">共 %1$d 首</string>
+    <string name="rescan">重新扫描</string>
+
+    <string name="section_browse">浏览</string>
+    <string name="browse_folders">按文件夹浏览</string>
+    <string name="browse_folders_desc">按文件所在目录听歌（默认不占底部标签栏）</string>
+    <string name="show_folder_tab">在底部标签栏显示「文件夹」</string>
+
+    <string name="section_online">在线匹配</string>
+    <string name="online_match_title">联网补全封面与歌词</string>
+    <string name="online_match_desc">按歌名与艺术家联网匹配封面和歌词，结果存到本地。关掉后 App 完全离线，播放不受影响。</string>
+    <string name="online_match_now">立即补全缺失封面</string>
+    <string name="online_match_matching">正在补全…（%1$d/%2$d）</string>
+    <string name="online_match_done">已补全 %1$d 首</string>
+    <string name="online_match_fail">网络不可用，稍后再试</string>
+    <string name="online_match_off">已关闭，不会联网</string>
+    <string name="online_match_none">没有需要补全的曲目</string>
+
+    <string name="section_about">关于</string>
+    <string name="about_text">清 · 灰白极简播放器\n本地音乐优先 · 无广告\nAndroid 8.0 及以上 · 不依赖 Google Play 服务</string>
 
     <!-- 通知渠道 -->
     <string name="channel_playback_name">播放控制</string>
     <string name="channel_playback_desc">常驻显示当前播放与控制按钮</string>
 
-    <string name="empty_library">曲库为空</string>
-    <string name="empty_library_msg">未扫描到音乐文件，请在设置中重新扫描或检查权限。</string>
     <string name="unknown_artist">未知艺术家</string>
     <string name="unknown_album">未知专辑</string>
     <string name="unknown_title">未知曲目</string>

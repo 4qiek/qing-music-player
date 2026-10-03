@@ -61,7 +61,7 @@ fun SongRow(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(QingDimen.SpaceM)
     ) {
-        AlbumArt(uri = song.albumArtUri, size = QingDimen.ArtSize)
+        AlbumArt(model = song.artworkModel, size = QingDimen.ArtSize)
 
         Column(
             modifier = Modifier.weight(1f),

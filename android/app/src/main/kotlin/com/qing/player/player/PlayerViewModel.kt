@@ -3,6 +3,10 @@ package com.qing.player.player
 import android.app.Application
 import android.content.ComponentName
 import android.content.ContentUris
+import android.content.Context
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
+import android.os.Build
 import android.provider.MediaStore
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.AndroidViewModel
@@ -15,7 +19,9 @@ import androidx.media3.session.SessionToken
 import com.qing.player.data.AlbumGroup
 import com.qing.player.data.ArtistGroup
 import com.qing.player.data.FolderGroup
+import com.qing.player.data.MetadataCache
 import com.qing.player.data.MusicRepository
+import com.qing.player.data.OnlineMatcher
 import com.qing.player.data.SettingsStore
 import com.qing.player.data.Song
 import com.qing.player.data.db.AppDatabase
@@ -48,6 +54,8 @@ class PlayerViewModel(app: Application) : AndroidViewModel(app) {
     private val repo = MusicRepository.getInstance(app)
     private val db = AppDatabase.getInstance(app)
     private val settings = SettingsStore.getInstance(app)
+    /** 联网补全到的封面/歌词的本地缓存 */
+    private val cache = MetadataCache.getInstance(app)
 
     // ---------------- 曲库 ----------------
     private val _songs = MutableStateFlow<List<Song>>(emptyList())
@@ -118,7 +126,7 @@ class PlayerViewModel(app: Application) : AndroidViewModel(app) {
     private val _sleepRemaining = MutableStateFlow(0L)
     val sleepRemaining: StateFlow<Long> = _sleepRemaining.asStateFlow()
 
-    // ---------------- 设置（主题 / EQ）----------------
+    // ---------------- 设置（主题 / EQ / 语言 / 字体 / 浏览 / 联网）----------------
     private val _themeMode = MutableStateFlow(settings.themeMode)
     val themeMode: StateFlow<String> = _themeMode.asStateFlow()
 
@@ -131,6 +139,29 @@ class PlayerViewModel(app: Application) : AndroidViewModel(app) {
     private val _eqLevels = MutableStateFlow(settings.eqLevels)
     val eqLevels: StateFlow<IntArray> = _eqLevels.asStateFlow()
 
+    /** 界面语言；改完需要 recreate Activity 才生效 */
+    private val _language = MutableStateFlow(settings.language)
+    val language: StateFlow<String> = _language.asStateFlow()
+
+    private val _fontFamily = MutableStateFlow(settings.fontFamily)
+    val fontFamily: StateFlow<String> = _fontFamily.asStateFlow()
+
+    private val _fontScale = MutableStateFlow(settings.fontScale)
+    val fontScale: StateFlow<Float> = _fontScale.asStateFlow()
+
+    private val _showFolderTab = MutableStateFlow(settings.showFolderTab)
+    val showFolderTab: StateFlow<Boolean> = _showFolderTab.asStateFlow()
+
+    private val _onlineMatchEnabled = MutableStateFlow(settings.onlineMatchEnabled)
+    val onlineMatchEnabled: StateFlow<Boolean> = _onlineMatchEnabled.asStateFlow()
+
+    /**
+     * 联网补全的进度；null 表示当前没在补。
+     * 用 data class 而不是三个 StateFlow，是为了让设置页一次重组就拿到一致的一组数。
+     */
+    private val _matchProgress = MutableStateFlow<MatchProgress?>(null)
+    val matchProgress: StateFlow<MatchProgress?> = _matchProgress.asStateFlow()
+
     // ---------------- MediaController ----------------
     private var controller: MediaController? = null
     private val sessionToken =
@@ -139,6 +170,8 @@ class PlayerViewModel(app: Application) : AndroidViewModel(app) {
         MediaController.Builder(app, sessionToken).buildAsync()
 
     private var lyricsJob: Job? = null
+    /** 联网补全的后台任务，同一时刻只跑一个 */
+    private var matchingJob: Job? = null
 
     private val controllerListener = object : Player.Listener {
         override fun onIsPlayingChanged(isPlaying: Boolean) {
@@ -213,7 +246,7 @@ class PlayerViewModel(app: Application) : AndroidViewModel(app) {
                 _lyrics.value = LrcParser.Lyric(emptyList())
                 if (song == null) return@collect
                 lyricsJob = launch {
-                    val lyric = withContext(Dispatchers.IO) { repo.loadLyrics(song) }
+                    val lyric = withContext(Dispatchers.IO) { loadLyricsFor(song) }
                     _lyrics.value = lyric
                 }
             }
@@ -224,11 +257,133 @@ class PlayerViewModel(app: Application) : AndroidViewModel(app) {
 
     fun scanLibrary() {
         viewModelScope.launch(Dispatchers.IO) {
-            val list = repo.querySongs()
+            val list = repo.querySongs().map { song ->
+                // 扫描时就把之前补到过的封面贴回去，避免界面闪一下再变
+                val url = cache.coverUrl(song.id)
+                if (url != null) song.copy(artworkUrl = url) else song
+            }
             withContext(Dispatchers.Main) {
                 _songs.value = list
                 _libraryReady.value = true
             }
+            // 扫描完顺手补一轮缺失的封面。开关关着就不联网。
+            matchMissingMetadata()
+        }
+    }
+
+    // ---------------- 联网补全 ----------------
+
+    /**
+     * 歌词的三级来源，按优先级：
+     *   ① 同目录外挂 .lrc（本地优先，最准）
+     *   ② 之前联网补过、存在本地缓存里的
+     *   ③ 现场联网去 LRCLIB 拉
+     *
+     * 联网这一步只在开关打开时做，失败一律静默——**没有歌词不能变成报错**，
+     * 播放页只是显示占位文案。
+     */
+    private suspend fun loadLyricsFor(song: Song): LrcParser.Lyric {
+        val local = repo.loadLyrics(song)
+        if (local.lines.isNotEmpty()) return local
+
+        cache.lyrics(song.id)?.let { text ->
+            val parsed = LrcParser.parse(text)
+            if (parsed.lines.isNotEmpty()) return parsed
+        }
+
+        if (!settings.onlineMatchEnabled) return LrcParser.Lyric(emptyList())
+        val text = OnlineMatcher.fetchLyrics(song.title, song.artist, song.album)
+        if (!text.isNullOrBlank()) {
+            cache.putLyrics(song.id, text)
+            cache.save()
+            return LrcParser.parse(text)
+        }
+        return LrcParser.Lyric(emptyList())
+    }
+
+    /**
+     * 为缺失封面的曲目联网补全，最多 [limit] 首。
+     *
+     * 两个刻意的限制：
+     * - **限量**：几千首曲库全部联网问一遍既不现实也不礼貌（公开接口有速率限制），
+     *   所以一轮最多 200 首，剩下的下次扫描继续。
+     * - **节流**：每首之间 250ms，避免短时间打出一堆请求被当成滥用。
+     */
+    fun matchMissingMetadata(limit: Int = 200) {
+        if (!_onlineMatchEnabled.value) return
+        if (matchingJob?.isActive == true) return
+        // 没网就别开工：否则每首都要等满连接超时，一轮下来二十几分钟
+        if (!isNetworkAvailable()) {
+            _matchProgress.value = MatchProgress(0, 0, 0, offline = true)
+            return
+        }
+        matchingJob = viewModelScope.launch(Dispatchers.IO) {
+            val targets = _songs.value.filter { cache.needsCover(it.id) }.take(limit)
+            if (targets.isEmpty()) {
+                _matchProgress.value = MatchProgress(0, 0, 0)
+                return@launch
+            }
+            var matched = 0
+            targets.forEachIndexed { index, song ->
+                // 用户在补全途中把开关关了：立刻停手，不再发新请求
+                if (!_onlineMatchEnabled.value) {
+                    cache.save()
+                    _matchProgress.value = null
+                    return@launch
+                }
+                _matchProgress.value = MatchProgress(index, targets.size, matched)
+                val result = OnlineMatcher.match(song, wantLyrics = false)
+                if (result?.coverUrl != null) {
+                    cache.putCover(song.id, result.coverUrl)
+                    matched++
+                }
+                // 每 10 首才把封面写回曲库一次：每次改 _songs 都会触发
+                // 专辑/艺术家/文件夹三个分组重算，逐首更新等于自杀
+                if (index % 10 == 9) flushArtwork()
+                delay(250)
+            }
+            flushArtwork()
+            cache.save()
+            _matchProgress.value = MatchProgress(targets.size, targets.size, matched)
+        }
+    }
+
+    /**
+     * 当前是否有可用网络。
+     * 只在准备开工前查一次——批量补全时每首都等超时是不可接受的。
+     */
+    private fun isNetworkAvailable(): Boolean {
+        val app = getApplication<Application>()
+        val cm = app.getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager
+            ?: return false
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            cm.activeNetwork?.let { cm.getNetworkCapabilities(it) }
+                ?.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) == true
+        } else {
+            @Suppress("DEPRECATION")
+            cm.activeNetworkInfo?.isConnected == true
+        }
+    }
+
+    /** 把缓存里的封面贴回当前曲库列表（会触发一次分组重算，别高频调用） */
+    private fun flushArtwork() {
+        val list = _songs.value
+        if (list.isEmpty()) return
+        var changed = false
+        val updated = list.map { song ->
+            val url = cache.coverUrl(song.id)
+            if (url != null && song.artworkUrl != url) {
+                changed = true
+                song.copy(artworkUrl = url)
+            } else {
+                song
+            }
+        }
+        if (changed) {
+            _songs.value = updated
+            // 正在播的那首也要换封面
+            _currentSong.value = updated.firstOrNull { it.id == _currentSong.value?.id }
+                ?: _currentSong.value
         }
     }
 
@@ -400,6 +555,37 @@ class PlayerViewModel(app: Application) : AndroidViewModel(app) {
         _themeMode.value = mode
     }
 
+    /**
+     * 切换语言。
+     * 只是把偏好写下去——真正的切换由调用方 recreate Activity 完成，
+     * 因为 attachBaseContext 只在创建时执行，改设置不会自动重走。
+     */
+    fun setLanguage(tag: String) {
+        settings.language = tag
+        _language.value = tag
+    }
+
+    fun setFontFamily(family: String) {
+        settings.fontFamily = family
+        _fontFamily.value = family
+    }
+
+    fun setFontScale(scale: Float) {
+        settings.fontScale = scale
+        _fontScale.value = scale
+    }
+
+    fun setShowFolderTab(show: Boolean) {
+        settings.showFolderTab = show
+        _showFolderTab.value = show
+    }
+
+    fun setOnlineMatchEnabled(enabled: Boolean) {
+        settings.onlineMatchEnabled = enabled
+        _onlineMatchEnabled.value = enabled
+        if (!enabled) matchingJob?.cancel()
+    }
+
     // ---------------- 内部 ----------------
 
     private fun syncCurrentSong(id: Long?) {
@@ -436,6 +622,21 @@ class PlayerViewModel(app: Application) : AndroidViewModel(app) {
         controller?.removeListener(controllerListener)
         MediaController.releaseFuture(controllerFuture)
         controller = null
+        cache.save()
         super.onCleared()
     }
 }
+
+/**
+ * 联网补全的进度。
+ * @param done    已处理到第几首
+ * @param total   本轮总共要处理多少首
+ * @param matched 其中真正补到封面的数量
+ * @param offline 为 true 表示这次是因为**没有网络**直接放弃的，界面上要如实说明
+ */
+data class MatchProgress(
+    val done: Int,
+    val total: Int,
+    val matched: Int,
+    val offline: Boolean = false
+)
