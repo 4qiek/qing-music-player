@@ -31,6 +31,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -52,21 +53,33 @@ class PlayerViewModel(app: Application) : AndroidViewModel(app) {
     private val _songs = MutableStateFlow<List<Song>>(emptyList())
     val songs: StateFlow<List<Song>> = _songs.asStateFlow()
 
+    // 曲库派生数据（id 索引 / 专辑 / 艺术家 / 文件夹分组）。
+    //
+    // 两个性能要点，改之前先想清楚：
+    // 1. 必须 flowOn(Default)。这几个分组是 groupBy + 排序，几千首曲目上是实打实的 CPU 工作，
+    //    留在默认调度器（主线程）会在扫描完曲库后卡住界面。
+    // 2. 用 Lazily 而不是 WhileSubscribed。WhileSubscribed 在切走页面 5 秒后就丢缓存，
+    //    每次切回底部 tab 都要重算一遍分组——这正是切页卡顿的来源。这些数据一直用得上，
+    //    常驻持有的只是一堆引用，代价远小于反复重算。
     val songsById: StateFlow<Map<Long, Song>> = _songs
         .map { it.associateBy { s -> s.id } }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyMap())
+        .flowOn(Dispatchers.Default)
+        .stateIn(viewModelScope, SharingStarted.Lazily, emptyMap())
 
     val albums: StateFlow<List<AlbumGroup>> = _songs
         .map { repo.groupAlbums(it) }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+        .flowOn(Dispatchers.Default)
+        .stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 
     val artists: StateFlow<List<ArtistGroup>> = _songs
         .map { repo.groupArtists(it) }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+        .flowOn(Dispatchers.Default)
+        .stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 
     val folders: StateFlow<List<FolderGroup>> = _songs
         .map { repo.groupFolders(it) }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+        .flowOn(Dispatchers.Default)
+        .stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 
     val favorites: StateFlow<Set<Long>> = db.favoriteDao().observeAll()
         .map { it.toSet() }
@@ -165,16 +178,31 @@ class PlayerViewModel(app: Application) : AndroidViewModel(app) {
             ContextCompat.getMainExecutor(app)
         )
 
-        // 播放进度轮询：MediaSession 不推送连续进度，UI 需要 0.5s 级刷新（歌词与进度条）
+        // 播放进度轮询。
+        //
+        // MediaSession 不推送连续的播放位置，歌词高亮与进度条只能靠轮询。
+        // 但这里有两个省电 / 省帧的关键点：
+        //   1. 暂停或没有曲目时把间隔从 0.5s 放宽到 2s——小屏设备上没必要空转刷界面；
+        //   2. STATE_IDLE（还没 prepare / 已 stop）时直接跳过，不产生任何状态写入。
         viewModelScope.launch {
             while (true) {
-                delay(500)
-                controller?.let { c ->
-                    _positionMs.value = c.currentPosition.coerceAtLeast(0)
-                    _durationMs.value = c.duration.coerceAtLeast(0)
-                }
-                val svc = PlaybackService.instance
-                _sleepRemaining.value = svc?.sleepRemainingMs() ?: 0L
+                delay(if (_isPlaying.value) 500L else 2_000L)
+                val c = controller ?: continue
+                if (c.playbackState == Player.STATE_IDLE) continue
+                _positionMs.value = c.currentPosition.coerceAtLeast(0)
+                val d = c.duration
+                if (d > 0) _durationMs.value = d
+            }
+        }
+
+        // 睡眠定时剩余：界面上只显示到「分钟」，所以只在分钟数变化时才推送新值。
+        // 每秒推一次会让整块播放界面每秒重组，完全不值当。
+        viewModelScope.launch {
+            while (true) {
+                delay(1_000)
+                val remaining = PlaybackService.instance?.sleepRemainingMs() ?: 0L
+                val shown = if (remaining <= 0L) 0L else ((remaining + 59_999L) / 60_000L) * 60_000L
+                if (shown != _sleepRemaining.value) _sleepRemaining.value = shown
             }
         }
 
@@ -208,8 +236,9 @@ class PlayerViewModel(app: Application) : AndroidViewModel(app) {
     fun restoreLastPlayback() {
         val lastId = settings.lastSongId
         if (lastId < 0) return
-        // 不能读 songsById.value：它是 WhileSubscribed 的 stateIn，
-        // 此刻无订阅者，值仍为空 map，会让断点续播静默失效。
+        // 不能读 songsById.value：此刻它可能还没有任何订阅者，
+        // StateFlow 尚未开始收集上游，值仍是空 map，会让断点续播静默失效。
+        // 这里直接从已扫描好的原始列表现算一份索引。
         val map = _songs.value.associateBy { it.id }
         if (map.isEmpty()) return
         val queue = settings.lastQueue.mapNotNull { map[it] }
@@ -328,6 +357,25 @@ class PlayerViewModel(app: Application) : AndroidViewModel(app) {
         PlaybackService.instance?.setEqualizerEnabled(enabled)
     }
 
+    /**
+     * EQ 滑杆拖动中：只把新的增益送给音频效果，**不落盘、不推 UI 状态**。
+     *
+     * 原来的写法是 onValueChange 直接调 setEqBand，而 setEqBand 每次都
+     * 复制一份 IntArray、改 SharedPreferences、再推一遍 StateFlow——
+     * 手指滑一下就是几十次磁盘写入 + 十段列表整体重组，低配机上必卡。
+     * 拖动时只需要"能听见"，真正的持久化留给松手时的 setEqBand。
+     */
+    fun previewEqBand(index: Int, millibel: Int) {
+        val current = _eqLevels.value
+        if (index !in current.indices) return
+        val levels = current.copyOf()
+        levels[index] = millibel
+        PlaybackService.instance?.applyEqualizerLevels(levels)
+        // 动过任意一段就不再是预设，预设 chip 立即取消选中（只写一次，不会每帧触发）
+        if (_eqPresetIndex.value != -1) _eqPresetIndex.value = -1
+    }
+
+    /** EQ 滑杆松手：落盘并同步 UI 状态 */
     fun setEqBand(index: Int, millibel: Int) {
         val levels = _eqLevels.value.copyOf()
         if (index !in levels.indices) return

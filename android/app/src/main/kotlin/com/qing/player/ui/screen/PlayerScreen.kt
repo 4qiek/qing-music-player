@@ -80,8 +80,6 @@ fun PlayerScreen(
 ) {
     val song by viewModel.currentSong.collectAsState()
     val isPlaying by viewModel.isPlaying.collectAsState()
-    val positionMs by viewModel.positionMs.collectAsState()
-    val durationMs by viewModel.durationMs.collectAsState()
     val shuffle by viewModel.shuffle.collectAsState()
     val repeatMode by viewModel.repeatMode.collectAsState()
     val favorites by viewModel.favorites.collectAsState()
@@ -128,8 +126,6 @@ fun PlayerScreen(
                 viewModel = viewModel,
                 song = current,
                 isPlaying = isPlaying,
-                positionMs = positionMs,
-                durationMs = durationMs,
                 shuffle = shuffle,
                 repeatMode = repeatMode,
                 isFavorite = favorites.contains(current.id),
@@ -210,8 +206,6 @@ private fun PlayerBody(
     viewModel: PlayerViewModel,
     song: Song,
     isPlaying: Boolean,
-    positionMs: Long,
-    durationMs: Long,
     shuffle: Boolean,
     repeatMode: Int,
     isFavorite: Boolean,
@@ -263,43 +257,18 @@ private fun PlayerBody(
         Spacer(Modifier.height(QingDimen.SpaceS))
 
         // ---- 歌词 ----
+        // 位置、进度同样由子组件各自订阅，父级 PlayerBody 不会因为 0.5 秒一次的
+        // 进度刷新而整体重组（否则 200dp 封面会被反复重新装载）。
         LyricsPanel(
             lyric = lyric,
-            positionMs = positionMs,
+            viewModel = viewModel,
             modifier = Modifier
                 .fillMaxWidth()
                 .weight(1f)
         )
 
         // ---- 进度 ----
-        Slider(
-            value = if (durationMs > 0) positionMs.toFloat().coerceAtMost(durationMs.toFloat()) else 0f,
-            onValueChange = { viewModel.seekTo(it.toLong()) },
-            valueRange = 0f..(if (durationMs > 0) durationMs.toFloat() else 1f),
-            modifier = Modifier.fillMaxWidth(),
-            colors = SliderDefaults.colors(
-                thumbColor = extended.accent,
-                activeTrackColor = extended.accent,
-                inactiveTrackColor = extended.divider
-            )
-        )
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 4.dp),
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            Text(
-                text = formatDuration(positionMs),
-                style = MaterialTheme.typography.labelSmall,
-                color = extended.textSecondary
-            )
-            Text(
-                text = formatDuration(durationMs),
-                style = MaterialTheme.typography.labelSmall,
-                color = extended.textSecondary
-            )
-        }
+        PlayerSeekBar(viewModel = viewModel)
 
         // ---- 控制区 ----
         Row(
@@ -410,19 +379,82 @@ private fun PlayerBody(
 }
 
 /**
+ * 播放进度条。
+ *
+ * 两个性能要点：
+ * 1. positionMs 在这里订阅，不在父级订阅，避免 0.5 秒一次把整页重组。
+ * 2. 拖动过程中只改**本地状态** `scrubValue`，松手（onValueChangeFinished）
+ *    才真正 seekTo。之前的写法是 onValueChange 直接 seekTo，手指每移动一帧
+ *    就向 ExoPlayer 发一次 seek 请求——在嵌入式设备上这是最典型的卡顿来源，
+ *    因为它要反复冲刷缓冲区、重新定位解码器。
+ */
+@Composable
+private fun PlayerSeekBar(
+    viewModel: PlayerViewModel,
+    modifier: Modifier = Modifier
+) {
+    val extended = LocalQingExtendedColors.current
+    val positionMs by viewModel.positionMs.collectAsState()
+    val durationMs by viewModel.durationMs.collectAsState()
+
+    var scrubValue by remember { mutableStateOf<Float?>(null) }
+
+    val maxValue = if (durationMs > 0) durationMs.toFloat() else 1f
+    val shownValue = scrubValue ?: positionMs.toFloat().coerceIn(0f, maxValue)
+
+    Column(modifier = modifier.fillMaxWidth()) {
+        Slider(
+            value = shownValue,
+            onValueChange = { scrubValue = it.coerceIn(0f, maxValue) },
+            onValueChangeFinished = {
+                scrubValue?.let { viewModel.seekTo(it.toLong()) }
+                scrubValue = null
+            },
+            valueRange = 0f..maxValue,
+            modifier = Modifier.fillMaxWidth(),
+            colors = SliderDefaults.colors(
+                thumbColor = extended.accent,
+                activeTrackColor = extended.accent,
+                inactiveTrackColor = extended.divider
+            )
+        )
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 4.dp),
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Text(
+                text = formatDuration(shownValue.toLong()),
+                style = MaterialTheme.typography.labelSmall,
+                color = extended.textSecondary
+            )
+            Text(
+                text = formatDuration(durationMs),
+                style = MaterialTheme.typography.labelSmall,
+                color = extended.textSecondary
+            )
+        }
+    }
+}
+
+/**
  * 歌词面板：按播放位置高亮当前行（点缀色）并自动滚动；
  * 没有歌词时显示占位说明（支持同目录 .lrc 与内嵌歌词）。
  */
 @Composable
 private fun LyricsPanel(
     lyric: LrcParser.Lyric,
-    positionMs: Long,
+    viewModel: PlayerViewModel,
     modifier: Modifier = Modifier
 ) {
     val extended = LocalQingExtendedColors.current
     val lines = lyric.lines
     val listState = rememberLazyListState()
-    val currentIndex = LrcParser.indexAt(lyric, positionMs)
+    val positionMs by viewModel.positionMs.collectAsState()
+    val currentIndex = remember(lines, positionMs / 200L) {
+        LrcParser.indexAt(lyric, positionMs)
+    }
 
     LaunchedEffect(currentIndex) {
         if (currentIndex >= 0) {

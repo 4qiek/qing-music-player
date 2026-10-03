@@ -33,7 +33,7 @@ import com.qing.player.ui.theme.TitleSerifStyle
 /**
  * 文件夹浏览。
  *
- * Walkman 用户习惯按文件夹听（尤其是自己整理的无标签专辑），
+ * 很多人习惯按文件夹听（尤其是自己整理的无标签专辑），
  * 所以这里把目录路径作为一级入口，并显示完整路径方便辨认内置存储与 SD 卡。
  */
 @Composable

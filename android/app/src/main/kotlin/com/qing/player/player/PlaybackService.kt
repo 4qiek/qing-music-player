@@ -11,6 +11,7 @@ import android.view.KeyEvent
 import androidx.media3.common.AudioAttributes
 import androidx.media3.common.C
 import androidx.media3.common.Player
+import androidx.media3.exoplayer.DefaultLoadControl
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.session.MediaSession
 import androidx.media3.session.MediaSessionService
@@ -29,13 +30,13 @@ import kotlinx.coroutines.launch
  *
  * 职责：
  * - 前台服务 + 通知栏常驻（封面 / 标题 / 艺术家 + 播放暂停上一曲下一曲）
- * - 接住索尼 Walkman 物理播放键与耳机线控（KEYCODE_MEDIA_*）
+ * - 接住设备物理播放键与耳机线控（KEYCODE_MEDIA_*）
  * - 音频焦点交由 ExoPlayer 托管（handleAudioFocus = true）
  * - 断点续播：退出时保存最后一首与进度
  * - 系统级 EQ 绑定与睡眠定时
  *
- * Walkman 注意：
- * - 设备无 GMS，这里不引入任何 Google Play 服务依赖；
+ * 兼容性注意：
+ * - 不引入任何 Google Play 服务依赖，离线环境也能正常工作；
  * - 第三方应用输出受系统限制，不强行指定采样率，全部交给 ExoPlayer 默认行为。
  */
 class PlaybackService : MediaSessionService() {
@@ -85,9 +86,25 @@ class PlaybackService : MediaSessionService() {
             .setUsage(C.USAGE_MEDIA)
             .build()
 
+        // 缓冲区策略（针对本地文件 + 存储卡的便携播放器场景调过）：
+        // ExoPlayer 默认的 maxBuffer 是按网络流媒体定的（50 秒），本地无损文件照这个
+        // 值读会预读一大块进内存——存储型设备内存有限，容易触发 LMK 回收别的进程。
+        // 这里收窄到 25 秒上限，同时把起播门槛压到 1.5 秒，点歌出声更快；
+        // prioritizeTimeOverSizeThresholds 让缓冲以时间为准，慢速 microSD 上更稳。
+        val loadControl = DefaultLoadControl.Builder()
+            .setBufferDurationsMs(
+                /* minBufferMs = */ 10_000,
+                /* maxBufferMs = */ 25_000,
+                /* bufferForPlaybackMs = */ 1_500,
+                /* bufferForPlaybackAfterRebufferMs = */ 3_000
+            )
+            .setPrioritizeTimeOverSizeThresholds(true)
+            .build()
+
         player = ExoPlayer.Builder(this)
             .setAudioAttributes(audioAttributes, /* handleAudioFocus = */ true)
             .setHandleAudioBecomingNoisy(true)   // 耳机拔出自动暂停
+            .setLoadControl(loadControl)
             .build()
             .apply {
                 addListener(playerListener)
@@ -95,7 +112,7 @@ class PlaybackService : MediaSessionService() {
 
         mediaSession = MediaSession.Builder(this, player)
             .setSessionActivity(sessionActivityPendingIntent())
-            // 媒体按键在这里显式处理（索尼物理播放键 / 耳机线控都会走到这里）
+            // 媒体按键在这里显式处理（机身物理播放键 / 耳机线控都会走到这里）
             .setCallback(SessionCallback())
             .build()
 
@@ -108,7 +125,7 @@ class PlaybackService : MediaSessionService() {
     /**
      * 媒体按键与所有播放命令的回调。
      *
-     * 索尼 Walkman 的实体播放键发的是标准 KEYCODE_MEDIA_*，
+     * 设备的实体播放键与耳机线控发的是标准 KEYCODE_MEDIA_*，
      * 系统把它们包成 ACTION_MEDIA_BUTTON 交给 MediaSessionService，
      * 最终落到这里；返回 true 表示已消费。
      */

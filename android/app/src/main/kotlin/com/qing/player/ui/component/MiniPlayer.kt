@@ -20,11 +20,14 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.qing.player.data.Song
+import com.qing.player.player.PlayerViewModel
 import com.qing.player.ui.theme.LocalQingExtendedColors
 import com.qing.player.ui.theme.QingDimen
 import com.qing.player.ui.theme.SubtitleSerifStyle
@@ -33,19 +36,23 @@ import com.qing.player.ui.theme.TitleSerifStyle
 /**
  * 底部迷你播放器。
  * 白卡片 + 顶部一条青瓷绿进度线；主播放键是画面里唯一的深色实心块。
+ *
+ * 播放进度（0.5 秒一跳）**在这里自己订阅**，而不是由上层把 positionMs 传进来。
+ * 原因：这个组件常驻在 Scaffold 的 bottomBar 里，进度若由上层持有，
+ * 每跳一次就会把整个 Scaffold（含 NavHost 里的列表页）一起重组。
+ * 把订阅收进组件内部后，重组范围就只有这条进度线本身。
  */
 @Composable
 fun MiniPlayer(
     song: Song,
     isPlaying: Boolean,
-    positionMs: Long,
-    durationMs: Long,
-    onTogglePlayPause: () -> Unit,
-    onNext: () -> Unit,
+    viewModel: PlayerViewModel,
     onOpenPlayer: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val extended = LocalQingExtendedColors.current
+    val positionMs by viewModel.positionMs.collectAsState()
+    val durationMs by viewModel.durationMs.collectAsState()
     val progress = if (durationMs > 0) {
         (positionMs.toFloat() / durationMs.toFloat()).coerceIn(0f, 1f)
     } else 0f
@@ -97,7 +104,7 @@ fun MiniPlayer(
 
                 // 主播放键：深色实心圆，唯一重色块
                 IconButton(
-                    onClick = onTogglePlayPause,
+                    onClick = viewModel::togglePlayPause,
                     modifier = Modifier.size(QingDimen.MinTouchTarget)
                 ) {
                     Icon(
@@ -107,7 +114,7 @@ fun MiniPlayer(
                     )
                 }
                 IconButton(
-                    onClick = onNext,
+                    onClick = viewModel::next,
                     modifier = Modifier.size(QingDimen.MinTouchTarget)
                 ) {
                     Icon(

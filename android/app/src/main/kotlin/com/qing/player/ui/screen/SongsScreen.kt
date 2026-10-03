@@ -82,7 +82,12 @@ fun SongsScreen(
             )
         } else {
             LazyColumn(Modifier.fillMaxSize()) {
-                itemsIndexed(filtered, key = { _, s -> s.id }) { index, song ->
+                itemsIndexed(
+                    items = filtered,
+                    key = { _, s -> s.id },
+                    // contentType 让 Compose 在复用时按类型挑选槽位，滚动时减少重新组合。
+                    contentType = { _, _ -> SongRowContentType }
+                ) { index, song ->
                     SongRow(
                         song = song,
                         isPlaying = currentSong?.id == song.id,
@@ -108,3 +113,6 @@ internal fun playAll(viewModel: PlayerViewModel, songs: List<Song>, onOpenPlayer
     viewModel.playQueue(songs, 0)
     onOpenPlayer()
 }
+
+/** LazyColumn 的 contentType 标记：歌曲行统一用这一种，便于列表复用 */
+internal const val SongRowContentType = "song_row"

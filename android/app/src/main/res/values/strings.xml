@@ -40,7 +40,7 @@
 
     <!-- EQ -->
     <string name="eq_title">均衡器</string>
-    <string name="eq_notice">这是安卓系统级 EQ，不是索尼 DSEE / 黑胶处理器（后者仅自带播放器可用）。</string>
+    <string name="eq_notice">这是安卓系统级 EQ，与厂商自带的私有音效引擎无关（后者仅自带播放器可用）。</string>
     <string name="eq_preset">预设</string>
     <string name="eq_custom">自定义</string>
 
@@ -51,7 +51,7 @@
     <string name="theme_dark">深色</string>
     <string name="theme_system">跟随系统</string>
     <string name="settings_about">关于</string>
-    <string name="about_text">清 · 灰白极简播放器\n为索尼 Walkman (NW-A300 / ZX700 / WM1AM2) 设计</string>
+    <string name="about_text">清 · 灰白极简播放器\n本地音乐 · 完全离线 · 无广告</string>
 
     <!-- 通知渠道 -->
     <string name="channel_playback_name">播放控制</string>

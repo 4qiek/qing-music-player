@@ -13,8 +13,8 @@ android {
         applicationId = "com.qing.player"
         minSdk = 26
         targetSdk = 34
-        versionCode = 1
-        versionName = "1.0.0"
+        versionCode = 2
+        versionName = "1.1.0"
 
         // 仅中文与英文资源，避免无用资源膨胀
         resourceConfigurations += setOf("zh", "en")
@@ -56,6 +56,16 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            // 用 debug 签名给 release 包签名。
+            //
+            // 目的**不是**省事，而是拿掉 debuggable 标记：debug 构建下 ART 只做
+            // quicken 而不是 AOT 编译，Compose 运行时还会打开额外的重组校验，
+            // 在小内存设备上就是肉眼可见的掉帧。release 构建（debuggable = false）
+            // 流畅度明显更好。
+            //
+            // 用同一个 debug key 签名的附带好处：可以直接覆盖安装先前那个 debug 包，
+            // 不需要先卸载（卸载会清掉已扫描的歌单/收藏）。
+            signingConfig = signingConfigs.getByName("debug")
         }
     }
 }
@@ -95,5 +105,5 @@ dependencies {
     implementation("io.coil-kt:coil-compose:2.5.0")
 
     // ----  accompanist 不用，权限用原生 Activity Result API ----
-    // 注意：本项目严禁引入任何 GMS / Firebase 依赖（Walkman 无 Google Play 服务）
+    // 注意：本项目严禁引入任何 GMS / Firebase 依赖，必须保证完全离线可用
 }

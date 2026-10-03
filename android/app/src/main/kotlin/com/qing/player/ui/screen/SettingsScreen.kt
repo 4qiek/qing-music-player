@@ -134,7 +134,7 @@ fun SettingsScreen(
                     color = MaterialTheme.colorScheme.onSurface
                 )
                 Text(
-                    text = "灰白极简播放器\n为索尼 Walkman（NW-A300 / ZX700 / WM1AM2）设计\nAndroid 12/13 · 无 Google Play 服务依赖",
+                    text = "灰白极简播放器\n本地音乐 · 完全离线 · 无广告\nAndroid 8.0 及以上 · 不依赖 Google Play 服务",
                     style = MaterialTheme.typography.bodySmall,
                     color = extended.textSecondary,
                     modifier = Modifier.padding(top = QingDimen.SpaceXS)

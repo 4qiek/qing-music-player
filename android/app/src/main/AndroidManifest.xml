@@ -5,7 +5,7 @@
     <!-- ================= 权限 ================= -->
     <!-- Android 13（API 33）及以上：媒体音频权限 -->
     <uses-permission android:name="android.permission.READ_MEDIA_AUDIO" />
-    <!-- Android 12（API 32）及以下：旧存储权限，Walkman 多为 Android 12/13，两者都声明 -->
+    <!-- Android 12（API 32）及以下：旧存储权限，与上面的新权限两者都声明，覆盖全部版本 -->
     <uses-permission
         android:name="android.permission.READ_EXTERNAL_STORAGE"
         android:maxSdkVersion="32" />
@@ -18,7 +18,7 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
     <!-- 实体按键/耳机线控：MediaSession 通过 MediaSessionService 接收，无需额外权限 -->
 
-    <!-- Walkman 无 Google Play 服务，声明硬件/服务非必需，避免被商店过滤 -->
+    <!-- 不依赖 Google Play 服务；同时声明硬件/服务非必需，避免被应用商店过滤 -->
     <uses-feature
         android:name="android.hardware.touchscreen"
         android:required="false" />
@@ -68,7 +68,7 @@
 
         <!--
              实体按键 / 耳机线控说明（无需额外 receiver）：
-             索尼 Walkman 的物理播放键发送标准 KEYCODE_MEDIA_*，
+             设备的物理播放键与耳机线控发送标准 KEYCODE_MEDIA_*，
              系统把 ACTION_MEDIA_BUTTON 交给 MediaSessionService.onStartCommand，
              Media3 再分发到 MediaSession.Callback.onMediaButtonEvent，
              PlaybackService 里已显式处理全部按键，因此这里不再声明独立 receiver（避免重复响应）。

@@ -11,7 +11,7 @@ import androidx.compose.ui.unit.sp
  * - 作品名（歌名 / 专辑名）用衬线体，呼应桌面版「清」的排版气质
  * - UI 铬件（标签、按钮、辅助信息）用黑体（系统 sans）
  *
- * Walkman 屏幕只有 3.6~5 英寸，字号整体偏小且行距紧凑。
+ * 面向小屏设备（3.6~6 英寸），字号整体偏小且行距紧凑。
  */
 val SerifFamily = FontFamily.Serif
 val SansFamily = FontFamily.Default

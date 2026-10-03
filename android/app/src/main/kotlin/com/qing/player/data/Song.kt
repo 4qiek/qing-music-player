@@ -27,7 +27,7 @@ data class Song(
             .appendPath(albumId.toString())
             .build()
 
-    /** 所属文件夹路径（Walkman 用户常按文件夹听歌） */
+    /** 所属文件夹路径（用于文件夹维度浏览） */
     val folderPath: String
         get() = path.substringBeforeLast('/', "").ifEmpty { "/" }
 

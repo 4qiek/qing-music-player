@@ -3,7 +3,7 @@
 一个用 Electron 写的极简桌面播放器，灰白配色，支持本地音乐、视频、图片、书籍和内嵌浏览器。
 
 > 本仓库同时收录了安卓版：见 [`android/`](android/README.md)，原生 Kotlin + Media3，
-> 为索尼 Walkman（NW-A300 / ZX700 / WM1AM2）适配。两端共享设计语言，代码各自独立。
+> 面向 Android 8.0 及以上的通用安卓设备。两端共享设计语言，代码各自独立。
 
 > **v1.3.0 起已移除在线音乐功能**（网易云 / QQ / 酷狗的搜索、播放、登录、排行榜、推荐与云端歌单）。
 > 保留的两项联网增强仅供本地文件使用：按歌名匹配封面/歌手信息，以及匹配歌词。
@@ -46,7 +46,7 @@ src/index.html  界面
 src/js/         渲染层模块
 src/css/        样式
 assets/         图标
-android/        安卓版（原生 Kotlin + Compose + Media3，面向 Walkman）
+android/        安卓版（原生 Kotlin + Compose + Media3，通用安卓设备）
 ```
 
 ## 说明

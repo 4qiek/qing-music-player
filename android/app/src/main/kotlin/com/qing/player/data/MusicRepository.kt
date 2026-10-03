@@ -9,10 +9,10 @@ import java.io.File
 /**
  * 曲库仓库：MediaStore 扫描 + 四个浏览维度分组（歌曲 / 专辑 / 艺术家 / 文件夹）。
  *
- * Walkman 说明：
+ * 实现说明：
  * - 内置存储与 SD 卡都在 MediaStore 的 EXTERNAL_CONTENT_URI 之下，一次查询即可覆盖，
  *   不需要额外处理 SD 卡路径。
- * - 无 GMS，因此不做任何云端匹配，全部信息来自本地文件元数据。
+ * - 不做任何云端匹配，全部信息来自本地文件元数据，完全离线可用。
  */
 class MusicRepository(private val context: Context) {
 
@@ -90,7 +90,7 @@ class MusicRepository(private val context: Context) {
             }
             .sortedBy { it.name.lowercase() }
 
-    /** 文件夹维度：按文件所在目录聚合（Walkman 用户常按文件夹听） */
+    /** 文件夹维度：按文件所在目录聚合（很多人习惯按目录整理音乐） */
     fun groupFolders(songs: List<Song>): List<FolderGroup> =
         songs.groupBy { it.folderPath }
             .map { (path, list) ->

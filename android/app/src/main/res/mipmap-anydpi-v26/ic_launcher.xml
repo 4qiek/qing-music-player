@@ -1,7 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Adaptive icon：灰色底 + 白色极简音符；圆形遮罩在小屏上更清晰 -->
+<!--
+  Adaptive icon（Android 8.0+，本项目 minSdk 26，所有设备都走这份）。
+
+  背景：青瓷绿 #0F6E56（@drawable/ic_launcher_background）
+  前景：满幅青瓷绿 + 白色音符（@drawable/ic_launcher_foreground）
+
+  三条踩过的坑，别再改回去：
+  1. 前景**不能**是白色图案配浅灰底——白画在 #F5F5F7 上对比度约 1:1，
+     启动器上看起来就是一块空白方块（上一版就是这么"没图标"的）。
+  2. 前景要**满幅**铺绿，只把音符放在居中约 66% 的安全区。绿色只画一个小圆、
+     四周留白的话，被圆形/方形/泪滴形启动器裁一圈就会露出灰边。
+  3. 不写 <monochrome>：那是 Android 13 才有的层，低版本设备上没有必要，
+     留着只会增加解析分支。要加的话务必先在 Android 12 上验证。
+-->
 <adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
     <background android:drawable="@drawable/ic_launcher_background" />
     <foreground android:drawable="@drawable/ic_launcher_foreground" />
-    <monochrome android:drawable="@drawable/ic_launcher_foreground" />
 </adaptive-icon>

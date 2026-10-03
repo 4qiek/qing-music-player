@@ -199,7 +199,11 @@ private fun PlaylistDetail(
             EmptyState(title = "歌单为空", message = "在播放页或歌曲列表里把曲目加进来。")
         } else {
             LazyColumn(Modifier.fillMaxSize()) {
-                itemsIndexed(songs, key = { _, s -> s.id }) { index, song ->
+                itemsIndexed(
+                    items = songs,
+                    key = { _, s -> s.id },
+                    contentType = { _, _ -> SongRowContentType }
+                ) { index, song ->
                     SongRow(
                         song = song,
                         isPlaying = currentSong?.id == song.id,

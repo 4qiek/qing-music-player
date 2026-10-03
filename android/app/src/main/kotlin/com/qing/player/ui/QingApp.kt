@@ -83,8 +83,6 @@ fun QingApp(viewModel: PlayerViewModel) {
 
     val currentSong by viewModel.currentSong.collectAsState()
     val isPlaying by viewModel.isPlaying.collectAsState()
-    val positionMs by viewModel.positionMs.collectAsState()
-    val durationMs by viewModel.durationMs.collectAsState()
     val extended = LocalQingExtendedColors.current
 
     // 播放器 / 均衡器 / 设置是全屏页，不显示底部导航与迷你播放器
@@ -130,14 +128,15 @@ fun QingApp(viewModel: PlayerViewModel) {
         bottomBar = {
             if (showBottomBar) {
                 Column {
+                    // 注意：不要把 positionMs / durationMs 提到这一层来 collect。
+                    // 那会让每 0.5 秒一次的进度刷新把 Scaffold 连同 NavHost 里的列表页
+                    // 全部重组一遍——小屏设备上最直观的表现就是"滑动掉帧"。
+                    // 进度由 MiniPlayer 内部自己订阅，重组范围限制在它自身。
                     currentSong?.let { song ->
                         MiniPlayer(
                             song = song,
                             isPlaying = isPlaying,
-                            positionMs = positionMs,
-                            durationMs = durationMs,
-                            onTogglePlayPause = viewModel::togglePlayPause,
-                            onNext = viewModel::next,
+                            viewModel = viewModel,
                             onOpenPlayer = { navController.navigate(Route.PLAYER) }
                         )
                     }

@@ -26,7 +26,7 @@ object QingDimen {
     val SpaceM: Dp = 12.dp
     val SpaceL: Dp = 16.dp
 
-    // 触控目标不小于 48dp（Walkman 屏幕小，此值为下限）
+    // 触控目标不小于 48dp（小屏设备上的下限）
     val MinTouchTarget: Dp = 48.dp
     val RowHeight: Dp = 56.dp
     val ArtSize: Dp = 48.dp
@@ -89,7 +89,7 @@ private val DarkScheme = darkColorScheme(
 
 /**
  * 「清」的主题入口。
- * 不使用 Material You 动态取色——Walkman 无 GMS 且动态色会破坏青瓷绿点缀的统一性。
+ * 不使用 Material You 动态取色——动态色会破坏青瓷绿点缀的统一性。
  */
 @Composable
 fun QingTheme(

@@ -27,6 +27,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -39,7 +42,7 @@ import com.qing.player.ui.theme.QingDimen
  * 均衡器页面。
  *
  * 用的是安卓系统级 EQ（android.media.audiofx.Equalizer），
- * 与索尼 DSEE / 黑胶处理器无关——那些 DSP 只有索尼自带播放器能调用。
+ * 与厂商私有音效引擎无关——那些只有厂商自带播放器能调用。
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -81,7 +84,7 @@ fun EqualizerScreen(
             )
         }
 
-        // ---- 说明：这是系统级 EQ，不是索尼 DSEE / 黑胶处理器 ----
+        // ---- 说明：这是系统级 EQ，不是厂商私有音效引擎 ----
         Surface(
             color = MaterialTheme.colorScheme.surfaceVariant,
             shape = RoundedCornerShape(QingDimen.RadiusControl),
@@ -90,7 +93,7 @@ fun EqualizerScreen(
                 .padding(QingDimen.SpaceM)
         ) {
             Text(
-                text = "这是安卓系统级 EQ，不是索尼 DSEE / 黑胶处理器（后者仅自带播放器可用）。",
+                text = "这是安卓系统级 EQ，与厂商自带的私有音效引擎无关（后者仅自带播放器可用）。",
                 style = MaterialTheme.typography.labelSmall,
                 color = extended.textSecondary,
                 modifier = Modifier.padding(QingDimen.SpaceM)
@@ -126,6 +129,10 @@ fun EqualizerScreen(
         ) {
             SettingsStore.EQ_FREQUENCIES.forEachIndexed { index, freq ->
                 val value = levels.getOrElse(index) { 0 }.toFloat()
+                // 拖动中使用本地状态，松手才落盘。理由同播放进度条：
+                // 逐帧写 SharedPreferences + 重建整段数组，是低配设备上最直观的卡顿来源。
+                var dragValue by remember(index, value) { mutableStateOf<Float?>(null) }
+                val shown = dragValue ?: value.coerceIn(MIN_LEVEL.toFloat(), MAX_LEVEL.toFloat())
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -139,8 +146,16 @@ fun EqualizerScreen(
                         modifier = Modifier.width(44.dp)
                     )
                     Slider(
-                        value = value.coerceIn(MIN_LEVEL.toFloat(), MAX_LEVEL.toFloat()),
-                        onValueChange = { viewModel.setEqBand(index, it.toInt()) },
+                        value = shown,
+                        onValueChange = {
+                            dragValue = it
+                            // 只作用于音效，实时可听；不写盘、不推状态
+                            viewModel.previewEqBand(index, it.toInt())
+                        },
+                        onValueChangeFinished = {
+                            dragValue?.let { viewModel.setEqBand(index, it.toInt()) }
+                            dragValue = null
+                        },
                         valueRange = MIN_LEVEL.toFloat()..MAX_LEVEL.toFloat(),
                         steps = 30,
                         enabled = enabled,
@@ -155,7 +170,7 @@ fun EqualizerScreen(
                         )
                     )
                     Text(
-                        text = formatGain(value.toInt()),
+                        text = formatGain(shown.toInt()),
                         style = MaterialTheme.typography.labelSmall,
                         color = extended.textSecondary,
                         modifier = Modifier.width(48.dp)
