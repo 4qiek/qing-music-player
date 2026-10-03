@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <!-- ================= 权限 ================= -->
+    <!-- Android 13（API 33）及以上：媒体音频权限 -->
+    <uses-permission android:name="android.permission.READ_MEDIA_AUDIO" />
+    <!-- Android 12（API 32）及以下：旧存储权限，Walkman 多为 Android 12/13，两者都声明 -->
+    <uses-permission
+        android:name="android.permission.READ_EXTERNAL_STORAGE"
+        android:maxSdkVersion="32" />
+
+    <!-- 通知栏（媒体通知 + 前台服务通知），Android 13 需运行时申请 -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
+    <!-- 前台服务：Android 12+ 必须声明 FOREGROUND_SERVICE 与具体类型 -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
+    <!-- 实体按键/耳机线控：MediaSession 通过 MediaSessionService 接收，无需额外权限 -->
+
+    <!-- Walkman 无 Google Play 服务，声明硬件/服务非必需，避免被商店过滤 -->
+    <uses-feature
+        android:name="android.hardware.touchscreen"
+        android:required="false" />
+    <uses-feature
+        android:name="android.software.leanback"
+        android:required="false" />
+
+    <application
+        android:allowBackup="true"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:roundIcon="@mipmap/ic_launcher"
+        android:supportsRtl="false"
+        android:theme="@style/Theme.Qing"
+        android:hardwareAccelerated="true"
+        tools:targetApi="34">
+
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:launchMode="singleTop"
+            android:screenOrientation="portrait"
+            android:theme="@style/Theme.Qing"
+            android:windowSoftInputMode="adjustResize">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+            <!-- 从文件管理器打开音频文件 -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="audio/*" />
+            </intent-filter>
+        </activity>
+
+        <!-- 后台播放服务：MediaSessionService，前台服务类型 mediaPlayback -->
+        <service
+            android:name=".player.PlaybackService"
+            android:exported="true"
+            android:foregroundServiceType="mediaPlayback">
+            <intent-filter>
+                <action android:name="androidx.media3.session.MediaSessionService" />
+                <action android:name="android.media.browse.MediaBrowserService" />
+            </intent-filter>
+        </service>
+
+        <!--
+             实体按键 / 耳机线控说明（无需额外 receiver）：
+             索尼 Walkman 的物理播放键发送标准 KEYCODE_MEDIA_*，
+             系统把 ACTION_MEDIA_BUTTON 交给 MediaSessionService.onStartCommand，
+             Media3 再分发到 MediaSession.Callback.onMediaButtonEvent，
+             PlaybackService 里已显式处理全部按键，因此这里不再声明独立 receiver（避免重复响应）。
+        -->
+
+    </application>
+
+</manifest>

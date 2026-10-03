@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 灰白极简基调（桌面版「清」移植） -->
+    <color name="background_light">#F5F5F7</color>
+    <color name="surface_light">#FFFFFF</color>
+    <color name="text_primary_light">#1C1C1E</color>
+    <color name="text_secondary_light">#8E8E93</color>
+    <!-- 点缀色：青瓷绿 -->
+    <color name="accent_light">#0F6E56</color>
+
+    <!-- 深色模式 -->
+    <color name="background_dark">#1C1C1C</color>
+    <color name="surface_dark">#2C2C2E</color>
+    <color name="text_primary_dark">#F2F2F7</color>
+    <color name="text_secondary_dark">#8E8E93</color>
+    <!-- 深色下 accent 用浅青 -->
+    <color name="accent_dark">#5DCAA5</color>
+
+    <color name="black">#FF000000</color>
+    <color name="white">#FFFFFFFF</color>
+</resources>
