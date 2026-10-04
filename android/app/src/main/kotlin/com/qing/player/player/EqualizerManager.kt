@@ -1,6 +1,7 @@
 package com.qing.player.player
 
 import android.content.Context
+import android.media.audiofx.BassBoost
 import android.media.audiofx.Equalizer
 import android.util.Log
 import com.qing.player.data.SettingsStore
@@ -24,6 +25,10 @@ class EqualizerManager(private val settings: SettingsStore) {
     @Volatile
     private var equalizer: Equalizer? = null
 
+    /** 低音增强（lowshelf），与十段 EQ 独立，作用于同一 audio session */
+    @Volatile
+    private var bassBoost: BassBoost? = null
+
     private var sessionId: Int = 0
     private var deviceBandCount: Int = 0
     private var minLevel: Int = -1500
@@ -32,6 +37,9 @@ class EqualizerManager(private val settings: SettingsStore) {
 
     /** UI 十段增益（毫贝尔） */
     private var levels: IntArray = settings.eqLevels
+
+    /** 低音增强强度（0–1000），等 attach 后写入 */
+    private var pendingBassStrength: Int? = null
 
     /**
      * 绑定到播放器的 audioSessionId。
@@ -59,6 +67,21 @@ class EqualizerManager(private val settings: SettingsStore) {
             Log.w(TAG, "绑定系统 EQ 失败（该设备可能不支持）", t)
             equalizer = null
         }
+        // 低音增强单独建，有些设备只支持 EQ 不支持 BassBoost
+        try {
+            val bb = BassBoost(0, audioSessionId)
+            bb.enabled = settings.bassBoostEnabled
+            val strength = settings.bassBoostStrength
+            if (settings.bassBoostEnabled && strength in 1..1000) {
+                bb.setStrength(strength.toShort())
+            }
+            bassBoost = bb
+            Log.d(TAG, "BassBoost 已绑定 session=$audioSessionId")
+        } catch (t: Throwable) {
+            Log.w(TAG, "绑定 BassBoost 失败（该设备可能不支持）", t)
+            bassBoost = null
+            pendingBassStrength = settings.bassBoostStrength
+        }
     }
 
     /** 开关 EQ；关闭时增益全 0（等效直通） */
@@ -84,6 +107,22 @@ class EqualizerManager(private val settings: SettingsStore) {
         return preset
     }
 
+    /** 设置低音增强：开关 + 强度（0–1000）。落盘并立即生效 */
+    fun setBassBoost(enabled: Boolean, strength: Int) {
+        settings.bassBoostEnabled = enabled
+        settings.bassBoostStrength = strength
+        val bb = bassBoost
+        if (bb == null) {
+            // 还没绑到 audio session，先缓存，attach 后再应用
+            if (enabled) pendingBassStrength = strength
+            return
+        }
+        runCatching {
+            bb.enabled = enabled
+            if (enabled) bb.setStrength(strength.coerceIn(0, 1000).toShort())
+        }.onFailure { Log.w(TAG, "写入 BassBoost 失败", it) }
+    }
+
     private fun applyLevels(src: IntArray) {
         val eq = equalizer ?: run {
             // 还没拿到 audioSessionId，先缓存，等 attach 后再应用
@@ -107,7 +146,9 @@ class EqualizerManager(private val settings: SettingsStore) {
 
     fun release() {
         runCatching { equalizer?.release() }
+        runCatching { bassBoost?.release() }
         equalizer = null
+        bassBoost = null
         deviceBandCount = 0
     }
 

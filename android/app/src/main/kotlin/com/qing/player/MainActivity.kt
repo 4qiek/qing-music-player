@@ -73,6 +73,7 @@ class MainActivity : ComponentActivity() {
             val themeMode by viewModel.themeMode.collectAsState()
             val fontFamily by viewModel.fontFamily.collectAsState()
             val fontScale by viewModel.fontScale.collectAsState()
+            val accentArgb by viewModel.accentArgb.collectAsState()
             val darkTheme = when (themeMode) {
                 SettingsStore.THEME_DARK -> true
                 SettingsStore.THEME_LIGHT -> false
@@ -82,7 +83,9 @@ class MainActivity : ComponentActivity() {
             QingTheme(
                 darkTheme = darkTheme,
                 fontScale = fontScale,
-                useSerif = fontFamily != SettingsStore.FONT_SANS
+                useSerif = fontFamily != SettingsStore.FONT_SANS,
+                // 用户在设置里选的自定义点缀色；0 表示用内置青瓷绿
+                accentArgb = accentArgb.takeIf { it != SettingsStore.ACCENT_DEFAULT }
             ) {
                 var permissionGranted by remember {
                     mutableStateOf(Permissions.hasAudioPermission(this@MainActivity))

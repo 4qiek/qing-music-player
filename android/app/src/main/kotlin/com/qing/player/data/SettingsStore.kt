@@ -99,6 +99,38 @@ class SettingsStore private constructor(context: Context) {
         get() = prefs.getBoolean(KEY_ONLINE_MATCH, true)
         set(value) = prefs.edit().putBoolean(KEY_ONLINE_MATCH, value).apply()
 
+    // ---------------- 自定义主题色 ----------------
+    /**
+     * 自定义点缀色（ARGB，Int）。为 [ACCENT_DEFAULT] 时表示用内置青瓷绿，不替换。
+     * 选了别的颜色后，整套 ColorScheme 与扩展色都按这个色重新派生。
+     */
+    var accentColorArgb: Int
+        get() = prefs.getInt(KEY_ACCENT_COLOR, ACCENT_DEFAULT)
+        set(value) = prefs.edit().putInt(KEY_ACCENT_COLOR, value).apply()
+
+    // ---------------- 低音增强 ----------------
+    /**
+     * 低音增强开关。与十段 EQ 独立，走的是 android.media.audiofx.BassBoost（低架提升），
+     * 作用在同一 audio session。
+     */
+    var bassBoostEnabled: Boolean
+        get() = prefs.getBoolean(KEY_BASS_ENABLED, false)
+        set(value) = prefs.edit().putBoolean(KEY_BASS_ENABLED, value).apply()
+
+    /** 低音增强强度，BassBoost 的 setStrength 取值 0–1000，默认 0（关闭感） */
+    var bassBoostStrength: Int
+        get() = prefs.getInt(KEY_BASS_STRENGTH, 0).coerceIn(0, 1000)
+        set(value) = prefs.edit().putInt(KEY_BASS_STRENGTH, value.coerceIn(0, 1000)).apply()
+
+    // ---------------- 歌词延迟校准 ----------------
+    /**
+     * 歌词整体时间偏移（毫秒）。正值=歌词延后显示，负值=提前。
+     * LRC 文件自带的 [offset:] 标签由解析器处理，这里是用户手动微调，两者叠加。
+     */
+    var lyricOffsetMs: Int
+        get() = prefs.getInt(KEY_LYRIC_OFFSET, 0)
+        set(value) = prefs.edit().putInt(KEY_LYRIC_OFFSET, value).apply()
+
     // ---------------- 断点续播 ----------------
     var lastSongId: Long
         get() = prefs.getLong(KEY_LAST_SONG_ID, -1L)
@@ -132,6 +164,10 @@ class SettingsStore private constructor(context: Context) {
         private const val KEY_FONT_SCALE = "font_scale"
         private const val KEY_SHOW_FOLDER_TAB = "show_folder_tab"
         private const val KEY_ONLINE_MATCH = "online_match_enabled"
+        private const val KEY_ACCENT_COLOR = "accent_color_argb"
+        private const val KEY_BASS_ENABLED = "bass_boost_enabled"
+        private const val KEY_BASS_STRENGTH = "bass_boost_strength"
+        private const val KEY_LYRIC_OFFSET = "lyric_offset_ms"
 
         const val THEME_SYSTEM = "system"
         const val THEME_LIGHT = "light"
@@ -148,6 +184,21 @@ class SettingsStore private constructor(context: Context) {
 
         // 字号档位
         val FONT_SCALES = floatArrayOf(0.9f, 1.0f, 1.12f, 1.25f)
+
+        // ---- 自定义主题色 ----
+        /** 占位值：表示「沿用内置青瓷绿」，不替换 */
+        const val ACCENT_DEFAULT = 0
+        /** 预设色板（ARGB），设置页色板按此顺序展示；首项即内置青瓷绿 */
+        val ACCENT_PRESETS = intArrayOf(
+            0xFF0F6E56.toInt(),   // 青瓷绿（默认）
+            0xFF3B82F6.toInt(),   // 钴蓝
+            0xFF8B5CF6.toInt(),   // 紫罗兰
+            0xFFEC4899.toInt(),   // 玫红
+            0xFFF59E0B.toInt(),   // 琥珀
+            0xFFEF4444.toInt(),   // 朱砂
+            0xFF10B981.toInt(),   // 翡翠
+            0xFF6366F1.toInt()    // 靛青
+        )
 
         // ---- 均衡器十段频点（Hz）----
         const val EQ_BAND_COUNT = 10

@@ -1,8 +1,13 @@
 package com.qing.player.ui
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Album
 import androidx.compose.material.icons.filled.Folder
@@ -11,8 +16,6 @@ import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.QueueMusic
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material3.CenterAlignedTopAppBar
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -21,15 +24,14 @@ import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
@@ -50,7 +52,6 @@ import com.qing.player.ui.screen.SettingsScreen
 import com.qing.player.ui.screen.SongsScreen
 import com.qing.player.ui.theme.LocalQingExtendedColors
 import com.qing.player.ui.theme.QingDimen
-import com.qing.player.ui.theme.TitleSerifStyle
 
 /** 顶层路由 */
 object Route {
@@ -73,10 +74,10 @@ private data class BottomTab(
 /**
  * 「清」的主界面骨架。
  *
- * 底部四个浏览维度 + 歌单；顶部只有均衡器与设置两个入口；
+ * 底部四个浏览维度 + 歌单；右上角只有均衡器与设置两个入口（不设标题栏，
+ * 页面本身就是最好的标识，顶上一条大标题反而占地方）；
  * 有正在播放的曲目时，底部常驻迷你播放器。
  */
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun QingApp(viewModel: PlayerViewModel) {
     val navController = rememberNavController()
@@ -110,27 +111,23 @@ fun QingApp(viewModel: PlayerViewModel) {
 
     Scaffold(
         topBar = {
-            CenterAlignedTopAppBar(
-                title = {
-                    Text(
-                        text = stringResource(R.string.app_name),
-                        style = TitleSerifStyle,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                },
-                actions = {
-                    IconButton(onClick = { navController.navigate(Route.EQUALIZER) }) {
-                        Icon(Icons.Default.GraphicEq, contentDescription = stringResource(R.string.nav_equalizer))
-                    }
-                    IconButton(onClick = { navController.navigate(Route.SETTINGS) }) {
-                        Icon(Icons.Default.Settings, contentDescription = stringResource(R.string.nav_settings))
-                    }
-                },
-                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.background
-                )
-            )
+            // 轻量入口行：不要标题栏，只保留均衡器与设置两个图标，贴右上角
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .statusBarsPadding()
+                    .height(QingDimen.MinTouchTarget)
+                    .padding(horizontal = QingDimen.SpaceS),
+                horizontalArrangement = Arrangement.End,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                IconButton(onClick = { navController.navigate(Route.EQUALIZER) }) {
+                    Icon(Icons.Default.GraphicEq, contentDescription = stringResource(R.string.nav_equalizer))
+                }
+                IconButton(onClick = { navController.navigate(Route.SETTINGS) }) {
+                    Icon(Icons.Default.Settings, contentDescription = stringResource(R.string.nav_settings))
+                }
+            }
         },
         bottomBar = {
             if (showBottomBar) {

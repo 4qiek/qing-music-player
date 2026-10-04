@@ -1,6 +1,11 @@
 package com.qing.player.data
 
 import android.content.Context
+import android.media.MediaExtractor
+import android.media.MediaFormat
+import android.media.MediaMetadataRetriever
+import android.net.Uri
+import android.os.ParcelFileDescriptor
 import android.provider.MediaStore
 import android.util.Log
 import com.qing.player.R
@@ -160,6 +165,62 @@ class MusicRepository(private val context: Context) {
             return fallback
         }
         return v
+    }
+
+    /**
+     * 读取音频文件的格式参数（比特率 / 采样率 / 编码 / 声道）。
+     *
+     * 用 MediaMetadataRetriever，按 content://media/external/audio/media/<id> 取（与播放同源）。
+     * 这是一个相对昂贵的调用（要打开文件头解析），所以调用方按需取、按 id 缓存，
+     * 不能在曲库扫描时批量跑。
+     */
+    fun readAudioInfo(song: Song): AudioInfo? {
+        val uri = Uri.parse("content://media/external/audio/media/${song.id}")
+        val mmr = MediaMetadataRetriever()
+        return runCatching {
+            mmr.setDataSource(context, uri)
+            AudioInfo(
+                bitrate = mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_BITRATE)?.toIntOrNull(),
+                sampleRate = mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_SAMPLERATE)?.toIntOrNull(),
+                // MediaMetadataRetriever 没有「声道数」常量，改用 MediaExtractor 读音频轨的 KEY_CHANNEL_COUNT
+                channels = readChannelCount(uri),
+                codec = mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_MIMETYPE),
+                durationMs = mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION)?.toLongOrNull() ?: song.duration,
+                size = song.size,
+                path = song.path
+            )
+        }.onFailure { e ->
+            Log.w(TAG, "读取音频参数失败：${song.path}", e)
+        }.getOrNull().also {
+            runCatching { mmr.release() }
+        }
+    }
+
+    /**
+     * 用 MediaExtractor 读取首个音频轨的声道数。
+     * MediaMetadataRetriever 不暴露声道数常量，只能走这条路；
+     * MediaExtractor 没有 (Context, Uri) 重载，需要经 ContentResolver 拿 FileDescriptor。
+     */
+    private fun readChannelCount(uri: Uri): Int? {
+        val ex = MediaExtractor()
+        var pfd: ParcelFileDescriptor? = null
+        try {
+            pfd = context.contentResolver.openFileDescriptor(uri, "r") ?: return null
+            ex.setDataSource(pfd.fileDescriptor)
+            for (i in 0 until ex.trackCount) {
+                val fmt = ex.getTrackFormat(i)
+                val mime = fmt.getString(MediaFormat.KEY_MIME) ?: continue
+                if (mime.startsWith("audio/")) {
+                    return runCatching { fmt.getInteger(MediaFormat.KEY_CHANNEL_COUNT) }.getOrNull()
+                }
+            }
+        } catch (e: Exception) {
+            Log.w(TAG, "读取声道数失败：$uri", e)
+        } finally {
+            runCatching { ex.release() }
+            runCatching { pfd?.close() }
+        }
+        return null
     }
 
     companion object {

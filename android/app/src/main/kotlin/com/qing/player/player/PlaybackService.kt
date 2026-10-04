@@ -281,6 +281,8 @@ class PlaybackService : MediaSessionService() {
 
     fun setEqualizerEnabled(enabled: Boolean) = equalizer.setEnabled(enabled)
 
+    fun setBassBoost(enabled: Boolean, strength: Int) = equalizer.setBassBoost(enabled, strength)
+
     companion object {
         private const val TAG = "PlaybackService"
         private const val SAVE_INTERVAL_MS = 5_000L

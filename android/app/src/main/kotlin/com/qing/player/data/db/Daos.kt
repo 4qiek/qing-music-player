@@ -75,6 +75,19 @@ interface PlaylistDao {
     @Query("SELECT songId FROM playlist_songs WHERE playlistId = :playlistId")
     suspend fun getSongIdsOnce(playlistId: Long): List<Long>
 
+    /** 一次性读取歌单曲目 id（按 orderIndex 有序），拖拽重排前先取这份 */
+    @Query("SELECT songId FROM playlist_songs WHERE playlistId = :playlistId ORDER BY orderIndex ASC")
+    suspend fun getSongIdsOrdered(playlistId: Long): List<Long>
+
+    /**
+     * 拖拽重排后整体重写 orderIndex。
+     * 主键是 (playlistId, songId)，用 REPLACE 语义按新顺序覆盖。
+     */
+    @Transaction
+    suspend fun reorderSongs(playlistId: Long, entities: List<PlaylistSongEntity>) {
+        insertSongs(entities)
+    }
+
     /** 删除歌单及其所有曲目（事务） */
     @Transaction
     suspend fun deletePlaylistWithSongs(playlistId: Long) {

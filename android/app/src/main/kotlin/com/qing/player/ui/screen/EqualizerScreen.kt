@@ -56,6 +56,8 @@ fun EqualizerScreen(
     val enabled by viewModel.eqEnabled.collectAsState()
     val presetIndex by viewModel.eqPresetIndex.collectAsState()
     val levels by viewModel.eqLevels.collectAsState()
+    val bassEnabled by viewModel.bassBoostEnabled.collectAsState()
+    val bassStrength by viewModel.bassBoostStrength.collectAsState()
     val extended = LocalQingExtendedColors.current
 
     Column(
@@ -180,6 +182,75 @@ fun EqualizerScreen(
                     )
                 }
             }
+        }
+
+        // ---- 低音增强（独立的 lowshelf 效果，与十段 EQ 并行）----
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = QingDimen.SpaceM, vertical = QingDimen.SpaceS),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(Modifier.weight(1f)) {
+                Text(
+                    text = stringResource(R.string.bass_boost),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onBackground
+                )
+                Text(
+                    text = stringResource(R.string.bass_boost_desc),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = extended.textSecondary
+                )
+            }
+            Switch(
+                checked = bassEnabled,
+                onCheckedChange = { viewModel.setBassBoost(it, bassStrength) },
+                colors = SwitchDefaults.colors(
+                    checkedThumbColor = extended.accent,
+                    checkedTrackColor = extended.accent.copy(alpha = 0.4f)
+                )
+            )
+        }
+        var bassDrag by remember { mutableStateOf<Float?>(null) }
+        val bassShown = bassDrag ?: bassStrength.toFloat()
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = QingDimen.SpaceM),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = stringResource(R.string.bass_strength),
+                style = MaterialTheme.typography.labelSmall,
+                color = extended.textSecondary,
+                modifier = Modifier.width(44.dp)
+            )
+            Slider(
+                value = bassShown,
+                onValueChange = { bassDrag = it },
+                onValueChangeFinished = {
+                    bassDrag?.let { viewModel.setBassBoost(bassEnabled, it.toInt()) }
+                    bassDrag = null
+                },
+                valueRange = 0f..1000f,
+                enabled = bassEnabled,
+                modifier = Modifier.weight(1f),
+                colors = SliderDefaults.colors(
+                    thumbColor = extended.accent,
+                    activeTrackColor = extended.accent,
+                    inactiveTrackColor = extended.divider,
+                    disabledThumbColor = extended.textSecondary,
+                    disabledActiveTrackColor = extended.textSecondary,
+                    disabledInactiveTrackColor = extended.divider
+                )
+            )
+            Text(
+                text = "${(bassShown / 10).toInt()}%",
+                style = MaterialTheme.typography.labelSmall,
+                color = extended.textSecondary,
+                modifier = Modifier.width(48.dp)
+            )
         }
     }
 }

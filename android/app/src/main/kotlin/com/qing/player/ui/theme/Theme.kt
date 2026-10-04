@@ -91,15 +91,24 @@ private val DarkScheme = darkColorScheme(
 /**
  * 「清」的主题入口。
  * 不使用 Material You 动态取色——动态色会破坏青瓷绿点缀的统一性。
+ *
+ * @param accentArgb 自定义点缀色（ARGB Int）。为 null 或 [com.qing.player.data.SettingsStore.ACCENT_DEFAULT]
+ *                   时沿用内置青瓷绿；否则整套 ColorScheme 与扩展色按此色重新派生。
  */
 @Composable
 fun QingTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
     fontScale: Float = 1.0f,
     useSerif: Boolean = true,
+    accentArgb: Int? = null,
     content: @Composable () -> Unit
 ) {
-    val colorScheme = if (darkTheme) DarkScheme else LightScheme
+    val customAccent = accentArgb?.takeIf { it != com.qing.player.data.SettingsStore.ACCENT_DEFAULT }
+        ?.let { Color(it) }
+    val accentLight = customAccent ?: QingColor.AccentLight
+    val accentDark = customAccent?.let { lightenForDark(it) } ?: QingColor.AccentDark
+
+    val colorScheme = if (darkTheme) darkSchemeFrom(accentDark) else lightSchemeFrom(accentLight)
     // 字体设置来自设置页：风格（衬线/黑体）与字号缩放。
     // 计算放在这里而不是每次重组时做——同一个 scale/family 只算一次。
     val family = serifOrSans(useSerif)
@@ -112,7 +121,7 @@ fun QingTheme(
             textSecondary = QingColor.TextSecondaryDark,
             divider = QingColor.DividerDark,
             outline = QingColor.OutlineDark,
-            accent = QingColor.AccentDark,
+            accent = accentDark,
             playButtonBackground = QingColor.PlayButtonDarkOnDark,
             playButtonContent = Color(0xFF1C1C1E)
         )
@@ -121,7 +130,7 @@ fun QingTheme(
             textSecondary = QingColor.TextSecondaryLight,
             divider = QingColor.DividerLight,
             outline = QingColor.OutlineLight,
-            accent = QingColor.AccentLight,
+            accent = accentLight,
             playButtonBackground = QingColor.PlayButtonDark,
             playButtonContent = Color.White
         )
@@ -138,3 +147,57 @@ fun QingTheme(
         )
     }
 }
+
+/**
+ * 相对亮度（WCAG）。用来判断自定义 accent 上该叠白字还是黑字，
+ * 以及深色模式下要不要把 accent 提亮以保证对比度。
+ */
+private fun luminance(c: Color): Float {
+    fun comp(v: Float): Float = if (v <= 0.03928f) v / 12.92f else Math.pow(((v + 0.055) / 1.055), 2.4).toFloat()
+    return 0.2126f * comp(c.red) + 0.7152f * comp(c.green) + 0.0722f * comp(c.blue)
+}
+
+/** 深色模式下把过暗的自定义色提亮，避免在近黑底上看不清 */
+private fun lightenForDark(c: Color): Color =
+    if (luminance(c) < 0.45f) Color(
+        red = (c.red * 0.5f + 0.5f).coerceIn(0f, 1f),
+        green = (c.green * 0.5f + 0.5f).coerceIn(0f, 1f),
+        blue = (c.blue * 0.5f + 0.5f).coerceIn(0f, 1f),
+        alpha = 1f
+    ) else c
+
+/** 自定义 accent 在浅色底上配白字还是黑字 */
+private fun onAccentFor(accent: Color): Color =
+    if (luminance(accent) > 0.55f) Color(0xFF1C1C1E) else Color.White
+
+private fun lightSchemeFrom(accent: Color) = lightColorScheme(
+    primary = accent,
+    onPrimary = onAccentFor(accent),
+    primaryContainer = accent.copy(alpha = 0.12f),
+    onPrimaryContainer = accent,
+    secondary = accent,
+    onSecondary = onAccentFor(accent),
+    background = QingColor.BackgroundLight,
+    onBackground = QingColor.TextPrimaryLight,
+    surface = QingColor.SurfaceLight,
+    onSurface = QingColor.TextPrimaryLight,
+    surfaceVariant = Color(0xFFF0F0F2),
+    onSurfaceVariant = QingColor.TextSecondaryLight,
+    outline = QingColor.OutlineLight
+)
+
+private fun darkSchemeFrom(accent: Color) = darkColorScheme(
+    primary = accent,
+    onPrimary = onAccentFor(accent),
+    primaryContainer = accent.copy(alpha = 0.18f),
+    onPrimaryContainer = accent,
+    secondary = accent,
+    onSecondary = onAccentFor(accent),
+    background = QingColor.BackgroundDark,
+    onBackground = QingColor.TextPrimaryDark,
+    surface = QingColor.SurfaceDark,
+    onSurface = QingColor.TextPrimaryDark,
+    surfaceVariant = Color(0xFF3A3A3C),
+    onSurfaceVariant = QingColor.TextSecondaryDark,
+    outline = QingColor.OutlineDark
+)

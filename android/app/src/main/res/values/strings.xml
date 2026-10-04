@@ -57,6 +57,7 @@
     <string name="empty_playlist_detail_msg">在播放页或歌曲列表里把曲目加进来。</string>
     <string name="remove_from_playlist">从歌单移除</string>
     <string name="add_to_playlist">加入歌单</string>
+    <string name="play_next">下一首播放</string>
     <string name="no_playlist_hint">还没有歌单，先去「歌单」页新建一个。</string>
 
     <!-- 播放 -->
@@ -69,6 +70,9 @@
     <string name="repeat_all">列表循环</string>
     <string name="repeat_one">单曲循环</string>
     <string name="lyrics">歌词</string>
+    <string name="lyric_offset_back">−0.5s</string>
+    <string name="lyric_offset_forward">+0.5s</string>
+    <string name="lyric_offset_reset">重置</string>
     <string name="now_playing">正在播放</string>
     <string name="no_song_selected">还没有选择曲目</string>
     <string name="favorite">收藏</string>
@@ -83,6 +87,9 @@
     <string name="eq_notice">这是安卓系统级 EQ，与厂商自带的私有音效引擎无关（后者仅自带播放器可用）。</string>
     <string name="eq_preset">预设</string>
     <string name="eq_custom">自定义</string>
+    <string name="bass_boost">低音增强</string>
+    <string name="bass_boost_desc">独立于均衡器的低频增强</string>
+    <string name="bass_strength">强度</string>
     <string-array name="eq_preset_names">
         <item>默认</item>
         <item>流行</item>
@@ -101,6 +108,7 @@
     <string name="theme_light">浅色</string>
     <string name="theme_dark">深色</string>
     <string name="theme_system">跟随系统</string>
+    <string name="accent_color">主题色</string>
     <string name="language">语言</string>
     <string name="lang_system">跟随系统</string>
     <string name="lang_zh">中文</string>
@@ -136,6 +144,18 @@
 
     <string name="section_about">关于</string>
     <string name="about_text">清 · 灰白极简播放器\n本地音乐优先 · 无广告\nAndroid 8.0 及以上 · 不依赖 Google Play 服务</string>
+
+    <!-- 音频参数详情 -->
+    <string name="audio_info">音频详情</string>
+    <string name="audio_info_loading">正在读取…</string>
+    <string name="audio_codec">编码格式</string>
+    <string name="audio_bitrate">比特率</string>
+    <string name="audio_sample_rate">采样率</string>
+    <string name="audio_channels">声道</string>
+    <string name="audio_duration">时长</string>
+    <string name="audio_file_size">文件大小</string>
+    <string name="audio_file_path">路径</string>
+    <string name="audio_unknown">未知</string>
 
     <!-- 通知渠道 -->
     <string name="channel_playback_name">播放控制</string>

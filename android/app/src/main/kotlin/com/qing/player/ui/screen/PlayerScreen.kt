@@ -1,5 +1,6 @@
 package com.qing.player.ui.screen
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -20,6 +21,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.PlaylistAdd
@@ -59,6 +61,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.media3.common.Player
 import com.qing.player.R
+import com.qing.player.data.AudioInfo
 import com.qing.player.data.Song
 import com.qing.player.player.PlayerViewModel
 import com.qing.player.ui.component.AlbumArt
@@ -92,6 +95,7 @@ fun PlayerScreen(
 
     var showSleepDialog by remember { mutableStateOf(false) }
     var showPlaylistDialog by remember { mutableStateOf(false) }
+    var showAudioInfo by remember { mutableStateOf(false) }
 
     val current = song
 
@@ -100,7 +104,7 @@ fun PlayerScreen(
             .fillMaxSize()
             .padding(horizontal = QingDimen.SpaceM)
     ) {
-        // ---- 顶部返回 ----
+        // ---- 顶部返回 + 音频参数 ----
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
@@ -111,8 +115,12 @@ fun PlayerScreen(
             Text(
                 text = stringResource(R.string.now_playing),
                 style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.onBackground
+                color = MaterialTheme.colorScheme.onBackground,
+                modifier = Modifier.weight(1f)
             )
+            IconButton(onClick = { showAudioInfo = true }) {
+                Icon(Icons.Filled.Info, contentDescription = stringResource(R.string.audio_info))
+            }
         }
 
         if (current == null) {
@@ -178,19 +186,31 @@ fun PlayerScreen(
             onDismissRequest = { showPlaylistDialog = false },
             title = { Text(stringResource(R.string.add_to_playlist), style = MaterialTheme.typography.titleSmall) },
             text = {
-                if (playlists.isEmpty()) {
-                    Text(stringResource(R.string.no_playlist_hint))
-                } else {
-                    LazyColumn {
-                        itemsIndexed(playlists) { _, playlist ->
-                            TextButton(
-                                onClick = {
-                                    viewModel.addSongsToPlaylist(playlist.id, listOf(current))
-                                    showPlaylistDialog = false
-                                },
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                Text(playlist.name)
+                Column {
+                    // 下一首播放：不打断当前曲目，插队到它后面
+                    TextButton(
+                        onClick = {
+                            viewModel.playNext(current)
+                            showPlaylistDialog = false
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(stringResource(R.string.play_next))
+                    }
+                    if (playlists.isEmpty()) {
+                        Text(stringResource(R.string.no_playlist_hint))
+                    } else {
+                        LazyColumn {
+                            itemsIndexed(playlists) { _, playlist ->
+                                TextButton(
+                                    onClick = {
+                                        viewModel.addSongsToPlaylist(playlist.id, listOf(current))
+                                        showPlaylistDialog = false
+                                    },
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Text(playlist.name)
+                                }
                             }
                         }
                     }
@@ -199,6 +219,67 @@ fun PlayerScreen(
             confirmButton = {
                 TextButton(onClick = { showPlaylistDialog = false }) { Text(stringResource(R.string.close)) }
             }
+        )
+    }
+
+    if (current != null && showAudioInfo) {
+        AudioInfoDialog(viewModel = viewModel, onDismiss = { showAudioInfo = false })
+    }
+}
+
+/** 音频参数详情：比特率 / 采样率 / 编码 / 声道 / 时长 / 文件大小 / 路径 */
+@Composable
+private fun AudioInfoDialog(viewModel: PlayerViewModel, onDismiss: () -> Unit) {
+    val info by viewModel.audioInfo.collectAsState()
+    val extended = LocalQingExtendedColors.current
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.audio_info), style = MaterialTheme.typography.titleSmall) },
+        text = {
+            val a = info
+            if (a == null) {
+                Text(
+                    text = stringResource(R.string.audio_info_loading),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = extended.textSecondary
+                )
+            } else {
+                Column {
+                    InfoRow(stringResource(R.string.audio_codec), a.codec ?: stringResource(R.string.audio_unknown))
+                    InfoRow(stringResource(R.string.audio_bitrate), a.bitrateKbps?.let { "$it kbps" } ?: stringResource(R.string.audio_unknown))
+                    InfoRow(stringResource(R.string.audio_sample_rate), a.sampleRateKhz ?: stringResource(R.string.audio_unknown))
+                    InfoRow(stringResource(R.string.audio_channels), a.channelText ?: stringResource(R.string.audio_unknown))
+                    InfoRow(stringResource(R.string.audio_duration), formatDuration(a.durationMs))
+                    InfoRow(stringResource(R.string.audio_file_size), a.sizeText)
+                    InfoRow(stringResource(R.string.audio_file_path), a.path)
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.close)) }
+        }
+    )
+}
+
+@Composable
+private fun InfoRow(label: String, value: String) {
+    val extended = LocalQingExtendedColors.current
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 2.dp),
+        verticalAlignment = Alignment.Top
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodySmall,
+            color = extended.textSecondary,
+            modifier = Modifier.padding(end = 12.dp)
+        )
+        Text(
+            text = value,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurface
         )
     }
 }
@@ -444,8 +525,10 @@ private fun PlayerSeekBar(
 }
 
 /**
- * 歌词面板：按播放位置高亮当前行（点缀色）并自动滚动；
- * 没有歌词时显示占位说明（支持同目录 .lrc 与内嵌歌词）。
+ * 歌词面板：播放页中部的独立卡片区域（封面与标题之下、进度条之上）。
+ * - 有歌词：当前行用点缀色放大高亮并自动滚动；**点击任意行跳转到该句**；
+ *   面板顶部有「延迟校准」行，±0.5s 微调歌词整体偏移（对齐不准时用）。
+ * - 没有歌词：显示占位说明（支持同目录 .lrc 与联网匹配）。
  */
 @Composable
 private fun LyricsPanel(
@@ -457,8 +540,11 @@ private fun LyricsPanel(
     val lines = lyric.lines
     val listState = rememberLazyListState()
     val positionMs by viewModel.positionMs.collectAsState()
-    val currentIndex = remember(lines, positionMs / 200L) {
-        LrcParser.indexAt(lyric, positionMs)
+    val userOffsetMs by viewModel.lyricOffsetMs.collectAsState()
+    // 文件自带 [offset:] 标签与用户手动微调叠加生效
+    val totalOffset = lyric.offsetMs + userOffsetMs
+    val currentIndex = remember(lines, positionMs / 200L, totalOffset) {
+        LrcParser.indexAt(lines, positionMs + totalOffset)
     }
 
     LaunchedEffect(currentIndex) {
@@ -482,31 +568,81 @@ private fun LyricsPanel(
                 )
             }
         } else {
-            LazyColumn(
-                state = listState,
-                modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(vertical = QingDimen.SpaceM),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                itemsIndexed(lines) { index, line ->
-                    val isCurrent = index == currentIndex
+            Column(Modifier.fillMaxSize()) {
+                // ---- 延迟校准行：歌词快了/慢了在这里对齐 ----
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = QingDimen.SpaceS),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
                     Text(
-                        text = line.text,
-                        style = if (isCurrent) {
-                            androidx.compose.ui.text.TextStyle(
-                                fontFamily = FontFamily.Serif,
-                                fontSize = 17.sp,
-                                lineHeight = 26.sp
-                            )
-                        } else SubtitleSerifStyle,
-                        color = if (isCurrent) extended.accent else extended.textSecondary,
-                        textAlign = TextAlign.Center,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = QingDimen.SpaceL, vertical = QingDimen.SpaceXS)
+                        text = stringResource(R.string.lyrics),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = extended.textSecondary
                     )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        TextButton(onClick = { viewModel.adjustLyricOffset(-500) }) {
+                            Text(stringResource(R.string.lyric_offset_back), style = MaterialTheme.typography.labelSmall)
+                        }
+                        Text(
+                            text = formatOffset(userOffsetMs),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = if (userOffsetMs != 0) extended.accent else extended.textSecondary
+                        )
+                        TextButton(onClick = { viewModel.adjustLyricOffset(500) }) {
+                            Text(stringResource(R.string.lyric_offset_forward), style = MaterialTheme.typography.labelSmall)
+                        }
+                        if (userOffsetMs != 0) {
+                            TextButton(onClick = viewModel::resetLyricOffset) {
+                                Text(stringResource(R.string.lyric_offset_reset), style = MaterialTheme.typography.labelSmall)
+                            }
+                        }
+                    }
+                }
+                LazyColumn(
+                    state = listState,
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(
+                        start = QingDimen.SpaceL,
+                        end = QingDimen.SpaceL,
+                        top = QingDimen.SpaceXS,
+                        bottom = QingDimen.SpaceM
+                    ),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    itemsIndexed(lines) { index, line ->
+                        val isCurrent = index == currentIndex
+                        Text(
+                            text = line.text,
+                            style = if (isCurrent) {
+                                androidx.compose.ui.text.TextStyle(
+                                    fontFamily = FontFamily.Serif,
+                                    fontSize = 18.sp,
+                                    lineHeight = 27.sp
+                                )
+                            } else SubtitleSerifStyle,
+                            color = if (isCurrent) extended.accent else extended.textSecondary,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    // 跳到「这一句刚好成为当前行」的进度位置（把偏移算回去）
+                                    viewModel.seekTo((line.timeMs - totalOffset).coerceAtLeast(0L))
+                                }
+                                .padding(vertical = QingDimen.SpaceXS)
+                        )
+                    }
                 }
             }
         }
     }
+}
+
+/** 偏移展示：正数 = 歌词延后 */
+private fun formatOffset(ms: Int): String {
+    if (ms == 0) return "±0.0s"
+    val s = ms / 1000.0
+    return (if (s > 0) "+" else "") + "%.1fs".format(s)
 }

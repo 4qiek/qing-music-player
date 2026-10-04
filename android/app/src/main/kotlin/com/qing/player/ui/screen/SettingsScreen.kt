@@ -1,6 +1,8 @@
 package com.qing.player.ui.screen
 
 import android.app.Activity
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -9,7 +11,9 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -30,8 +34,10 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -58,6 +64,7 @@ fun SettingsScreen(
     onOpenFolders: () -> Unit
 ) {
     val themeMode by viewModel.themeMode.collectAsState()
+    val accentArgb by viewModel.accentArgb.collectAsState()
     val language by viewModel.language.collectAsState()
     val fontFamily by viewModel.fontFamily.collectAsState()
     val fontScale by viewModel.fontScale.collectAsState()
@@ -119,6 +126,12 @@ fun SettingsScreen(
                     (context as? Activity)?.recreate()
                 }
             }
+        )
+
+        SettingLabel(stringResource(R.string.accent_color))
+        AccentColorRow(
+            selected = accentArgb,
+            onSelect = viewModel::setAccentColor
         )
 
         SettingLabel(stringResource(R.string.font_style))
@@ -326,6 +339,45 @@ private fun <T> ChipRow(
                     selectedContainerColor = extended.accent.copy(alpha = 0.15f),
                     selectedLabelColor = extended.accent
                 )
+            )
+        }
+    }
+}
+
+/**
+ * 自定义主题色色板：一排圆形色块，选中的带描边圈。
+ * 首项是内置青瓷绿（值为 ACCENT_DEFAULT），其余按 SettingsStore.ACCENT_PRESETS。
+ */
+@Composable
+private fun AccentColorRow(
+    selected: Int,
+    onSelect: (Int) -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = QingDimen.SpaceM, vertical = QingDimen.SpaceS),
+        horizontalArrangement = Arrangement.spacedBy(QingDimen.SpaceS)
+    ) {
+        val presets = remember { com.qing.player.data.SettingsStore.ACCENT_PRESETS }
+        presets.forEachIndexed { index, argb ->
+            val argbValue = if (index == 0) com.qing.player.data.SettingsStore.ACCENT_DEFAULT else argb
+            val isSelected = selected == argbValue
+            androidx.compose.foundation.layout.Box(
+                modifier = Modifier
+                    .size(32.dp)
+                    .clip(androidx.compose.foundation.shape.CircleShape)
+                    .background(androidx.compose.ui.graphics.Color(argb))
+                    .then(
+                        if (isSelected) {
+                            Modifier.border(
+                                width = 2.dp,
+                                color = MaterialTheme.colorScheme.onBackground,
+                                shape = androidx.compose.foundation.shape.CircleShape
+                            )
+                        } else Modifier
+                    )
+                    .clickable { onSelect(argbValue) }
             )
         }
     }

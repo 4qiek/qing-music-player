@@ -18,6 +18,7 @@ import androidx.media3.session.MediaController
 import androidx.media3.session.SessionToken
 import com.qing.player.data.AlbumGroup
 import com.qing.player.data.ArtistGroup
+import com.qing.player.data.AudioInfo
 import com.qing.player.data.FolderGroup
 import com.qing.player.data.MetadataCache
 import com.qing.player.data.MusicRepository
@@ -155,6 +156,25 @@ class PlayerViewModel(app: Application) : AndroidViewModel(app) {
     private val _onlineMatchEnabled = MutableStateFlow(settings.onlineMatchEnabled)
     val onlineMatchEnabled: StateFlow<Boolean> = _onlineMatchEnabled.asStateFlow()
 
+    /** 歌词整体偏移（毫秒），正值=歌词延后；用户在播放页手动微调 */
+    private val _lyricOffsetMs = MutableStateFlow(settings.lyricOffsetMs)
+    val lyricOffsetMs: StateFlow<Int> = _lyricOffsetMs.asStateFlow()
+
+    /** 自定义主题色（ARGB）；0 表示用内置青瓷绿 */
+    private val _accentArgb = MutableStateFlow(settings.accentColorArgb)
+    val accentArgb: StateFlow<Int> = _accentArgb.asStateFlow()
+
+    /** 低音增强开关与强度（0–1000） */
+    private val _bassBoostEnabled = MutableStateFlow(settings.bassBoostEnabled)
+    val bassBoostEnabled: StateFlow<Boolean> = _bassBoostEnabled.asStateFlow()
+
+    private val _bassBoostStrength = MutableStateFlow(settings.bassBoostStrength)
+    val bassBoostStrength: StateFlow<Int> = _bassBoostStrength.asStateFlow()
+
+    /** 当前曲目的音频格式参数；IO 读取较慢，异步填充 */
+    private val _audioInfo = MutableStateFlow<AudioInfo?>(null)
+    val audioInfo: StateFlow<AudioInfo?> = _audioInfo.asStateFlow()
+
     /**
      * 联网补全的进度；null 表示当前没在补。
      * 用 data class 而不是三个 StateFlow，是为了让设置页一次重组就拿到一致的一组数。
@@ -170,6 +190,9 @@ class PlayerViewModel(app: Application) : AndroidViewModel(app) {
         MediaController.Builder(app, sessionToken).buildAsync()
 
     private var lyricsJob: Job? = null
+    private var audioInfoJob: Job? = null
+    /** 音频参数按曲目 id 缓存，避免重复打开文件头解析 */
+    private val audioInfoCache = HashMap<Long, AudioInfo>()
     /** 联网补全的后台任务，同一时刻只跑一个 */
     private var matchingJob: Job? = null
 
@@ -239,15 +262,25 @@ class PlayerViewModel(app: Application) : AndroidViewModel(app) {
             }
         }
 
-        // 切歌时异步加载歌词
+        // 切歌时异步加载歌词与音频参数
         viewModelScope.launch {
             _currentSong.collect { song ->
                 lyricsJob?.cancel()
                 _lyrics.value = LrcParser.Lyric(emptyList())
+                _audioInfo.value = null
                 if (song == null) return@collect
                 lyricsJob = launch {
                     val lyric = withContext(Dispatchers.IO) { loadLyricsFor(song) }
                     _lyrics.value = lyric
+                }
+                audioInfoJob = launch {
+                    // MediaMetadataRetriever 要打开文件头解析，放 IO 线程；
+                    // 结果按曲目 id 缓存，重复打开播放页不重复读
+                    _audioInfo.value = audioInfoCache[song.id] ?: run {
+                        val info = withContext(Dispatchers.IO) { repo.readAudioInfo(song) }
+                        if (info != null) audioInfoCache[song.id] = info
+                        info
+                    }
                 }
             }
         }
@@ -584,6 +617,70 @@ class PlayerViewModel(app: Application) : AndroidViewModel(app) {
         settings.onlineMatchEnabled = enabled
         _onlineMatchEnabled.value = enabled
         if (!enabled) matchingJob?.cancel()
+    }
+
+    /** 歌词偏移微调；步进 100ms，范围 ±5s，落盘 */
+    fun adjustLyricOffset(deltaMs: Int) {
+        val next = (settings.lyricOffsetMs + deltaMs).coerceIn(-5000, 5000)
+        settings.lyricOffsetMs = next
+        _lyricOffsetMs.value = next
+    }
+
+    fun resetLyricOffset() {
+        settings.lyricOffsetMs = 0
+        _lyricOffsetMs.value = 0
+    }
+
+    /** 自定义主题色；传入 [SettingsStore.ACCENT_DEFAULT] 表示回到内置青瓷绿 */
+    fun setAccentColor(argb: Int) {
+        settings.accentColorArgb = argb
+        _accentArgb.value = argb
+    }
+
+    fun setBassBoost(enabled: Boolean, strength: Int) {
+        settings.bassBoostEnabled = enabled
+        settings.bassBoostStrength = strength
+        _bassBoostEnabled.value = enabled
+        _bassBoostStrength.value = strength
+        PlaybackService.instance?.setBassBoost(enabled, strength)
+    }
+
+    // ---------------- 下一首播放 ----------------
+
+    /**
+     * 「下一首播放」：把 [song] 插到当前曲目之后，不打断正在播的这首。
+     * 用 MediaController.addMediaItems 在 currentIndex+1 处插入；
+     * 队列为空（还没在播）时等价于直接开播。
+     */
+    fun playNext(song: Song) {
+        val c = controller ?: return
+        if (c.currentMediaItem == null) {
+            playQueue(listOf(song), 0)
+            return
+        }
+        c.addMediaItems(c.currentMediaItemIndex + 1, listOf(song.toMediaItem()))
+    }
+
+    // ---------------- 歌单拖拽排序 ----------------
+
+    /**
+     * 拖拽重排歌单内曲目：把第 [from] 首移到 [to] 位置，整体 orderIndex 重写。
+     * UI 侧拖动过程中先改本地列表即时反馈，松手才调用这里落盘。
+     */
+    fun movePlaylistSong(playlistId: Long, from: Int, to: Int) {
+        if (from == to) return
+        viewModelScope.launch(Dispatchers.IO) {
+            val ids = db.playlistDao().getSongIdsOrdered(playlistId).toMutableList()
+            if (from !in ids.indices || to !in ids.indices) return@launch
+            val moved = ids.removeAt(from)
+            ids.add(to, moved)
+            db.playlistDao().reorderSongs(
+                playlistId,
+                ids.mapIndexed { index, songId ->
+                    PlaylistSongEntity(playlistId, songId, index)
+                }
+            )
+        }
     }
 
     // ---------------- 内部 ----------------

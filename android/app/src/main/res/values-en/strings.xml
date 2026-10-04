@@ -57,6 +57,7 @@
     <string name="empty_playlist_detail_msg">Add tracks from the player or the songs list.</string>
     <string name="remove_from_playlist">Remove from playlist</string>
     <string name="add_to_playlist">Add to playlist</string>
+    <string name="play_next">Play next</string>
     <string name="no_playlist_hint">No playlists yet. Create one on the Playlists tab first.</string>
 
     <!-- Playback -->
@@ -69,6 +70,9 @@
     <string name="repeat_all">Repeat all</string>
     <string name="repeat_one">Repeat one</string>
     <string name="lyrics">Lyrics</string>
+    <string name="lyric_offset_back">−0.5s</string>
+    <string name="lyric_offset_forward">+0.5s</string>
+    <string name="lyric_offset_reset">Reset</string>
     <string name="now_playing">Now playing</string>
     <string name="no_song_selected">No track selected</string>
     <string name="favorite">Favorite</string>
@@ -83,6 +87,9 @@
     <string name="eq_notice">This is the Android system equalizer. It is separate from the manufacturer\'s own audio engine, which only works in its own player.</string>
     <string name="eq_preset">Preset</string>
     <string name="eq_custom">Custom</string>
+    <string name="bass_boost">Bass boost</string>
+    <string name="bass_boost_desc">Low-frequency boost separate from the equalizer</string>
+    <string name="bass_strength">Strength</string>
     <string-array name="eq_preset_names">
         <item>Default</item>
         <item>Pop</item>
@@ -101,6 +108,7 @@
     <string name="theme_light">Light</string>
     <string name="theme_dark">Dark</string>
     <string name="theme_system">System default</string>
+    <string name="accent_color">Accent color</string>
     <string name="language">Language</string>
     <string name="lang_system">System default</string>
     <string name="lang_zh">中文</string>
@@ -136,6 +144,18 @@
 
     <string name="section_about">About</string>
     <string name="about_text">Qing · A minimal monochrome player\nLocal music first · No ads\nAndroid 8.0 and above · No Google Play services required</string>
+
+    <!-- Audio details -->
+    <string name="audio_info">Audio details</string>
+    <string name="audio_info_loading">Reading…</string>
+    <string name="audio_codec">Codec</string>
+    <string name="audio_bitrate">Bitrate</string>
+    <string name="audio_sample_rate">Sample rate</string>
+    <string name="audio_channels">Channels</string>
+    <string name="audio_duration">Duration</string>
+    <string name="audio_file_size">File size</string>
+    <string name="audio_file_path">Path</string>
+    <string name="audio_unknown">Unknown</string>
 
     <!-- Notification channel -->
     <string name="channel_playback_name">Playback controls</string>

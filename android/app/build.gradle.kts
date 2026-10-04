@@ -13,8 +13,8 @@ android {
         applicationId = "com.qing.player"
         minSdk = 26
         targetSdk = 34
-        versionCode = 3
-        versionName = "1.2.0"
+        versionCode = 4
+        versionName = "1.3.0"
 
         // 仅中文与英文资源，避免无用资源膨胀
         resourceConfigurations += setOf("zh", "en")
