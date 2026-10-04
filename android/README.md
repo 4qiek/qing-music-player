@@ -8,14 +8,14 @@
 
 - 包名：`com.qing.player`
 - minSdk 26（Android 8.0）/ targetSdk 34 / compileSdk 34
-- 版本：1.2.0
+- 版本：1.3.0
 
 ## 下载安装包
 
 预编译的 APK 在 [Releases](https://github.com/4qiek/qing-music-player/releases) 页面：
 
 ```
-https://github.com/4qiek/qing-music-player/releases/download/v1.2.0-android/qing-android-v1.2.0.apk
+https://github.com/4qiek/qing-music-player/releases/download/v1.3.0-android/qing-android-v1.3.0.apk
 ```
 
 支持 Android 8.0 及以上。安装包使用**调试签名**，可覆盖安装同签名的旧版本，歌单与收藏不会丢失。
@@ -31,9 +31,14 @@ https://github.com/4qiek/qing-music-player/releases/download/v1.2.0-android/qing
 | 封面 | 优先 MediaStore 内嵌封面，缺失时用联网匹配的地址补上，结果存本地 |
 | 歌单 | Room 持久化：歌单、收藏、播放历史 |
 | 均衡器 | 安卓系统级 `android.media.audiofx.Equalizer`，8 组预设 + 十段自定义 |
+| 低音增强 | 独立 `BassBoost` 音效，与 EQ 并存，强度 0–100% 可调 |
+| 歌词校准 | 点击任意行跳转播放；±0.5s 步进延迟校准，一键重置 |
+| 音频详情 | 播放页信息按钮展示编码 / 比特率 / 采样率 / 声道 / 时长 / 文件大小 |
+| 歌单排序 | 长按拖拽重排曲目；加入歌单时可选「下一首播放」 |
+| 封面缓存 | Coil 三级缓存：内存 24MB → 磁盘 50MB → 网络/ContentResolver 回源 |
 | 睡眠定时 | 15 / 30 / 60 分钟后暂停 |
 | 断点续播 | 保存最后一首、进度与整份队列，下次打开恢复到原位（不自动播放） |
-| 主题 | 浅色 / 深色 / 跟随系统，不使用 Material You 动态取色 |
+| 主题 | 浅色 / 深色 / 跟随系统，不使用 Material You 动态取色；支持 8 种预设主题色 |
 | 语言 | 中文 / English / 跟随系统，应用内切换（重进界面生效） |
 | 字体 | 字体风格（衬线 / 黑体）+ 字号缩放（小 / 标准 / 大 / 超大），全局生效 |
 | 浏览入口 | 「文件夹」默认不占底部标签栏，入口收在设置 → 浏览；需要可放回底部 |
