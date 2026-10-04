@@ -3,6 +3,7 @@ package com.qing.player.ui.screen
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -10,6 +11,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
@@ -301,7 +303,18 @@ private fun PlayerBody(
 
     Column(modifier = Modifier.fillMaxSize()) {
         // ---- 封面 ----
-        Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+        // 封面按比例吃空间、但最高 200dp。矮屏（或系统字体放大）时它自己缩，
+        // 把高度让给下面的歌词区——否则 200dp 的死尺寸会把 weight(1f) 的歌词
+        // 挤成 0 高度，整块歌词连"暂无歌词"提示一起被裁掉，看起来就像"没有歌词"。
+        BoxWithConstraints(
+            modifier = Modifier
+                .fillMaxWidth()
+                .weight(1f)
+                .heightIn(max = 200.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            // 矮屏 / 系统字体放大时封面自己缩，把高度让给歌词
+            val coverSize = minOf(QingDimen.CoverMaxHeight, maxHeight)
             Card(
                 shape = RoundedCornerShape(QingDimen.RadiusPanel),
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
@@ -309,7 +322,7 @@ private fun PlayerBody(
                 AlbumArt(
                     // 优先用联网补全的封面，没有再回到 MediaStore 的内嵌封面
                     model = song.artworkModel,
-                    size = 200.dp,
+                    size = coverSize,
                     cornerRadius = QingDimen.RadiusPanel,
                     modifier = Modifier.padding(QingDimen.SpaceS)
                 )
@@ -348,7 +361,10 @@ private fun PlayerBody(
             viewModel = viewModel,
             modifier = Modifier
                 .fillMaxWidth()
-                .weight(1f)
+                .weight(2f)
+                // 矮屏兜底：就算上面把封面压到很扁，也至少给歌词留得下两三行，
+                // 而不是被压成 0 高度整块消失。
+                .heightIn(min = QingDimen.LyricMinHeight)
         )
 
         // ---- 进度 ----
@@ -559,10 +575,24 @@ private fun LyricsPanel(
         shape = RoundedCornerShape(QingDimen.RadiusPanel)
     ) {
         if (lines.isEmpty()) {
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            // 空态也要一眼能认出"这块是歌词区"：一个「歌词」小标题 + 居中说明，
+            // 而不是留一片让人以为是空白的死区。
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = QingDimen.SpaceL),
+                verticalArrangement = Arrangement.Center,
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    text = stringResource(R.string.lyrics),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onBackground
+                )
+                Spacer(Modifier.height(QingDimen.SpaceS))
                 Text(
                     text = stringResource(R.string.no_lyrics_hint),
-                    style = MaterialTheme.typography.bodySmall,
+                    style = MaterialTheme.typography.bodyMedium,
                     color = extended.textSecondary,
                     textAlign = TextAlign.Center
                 )

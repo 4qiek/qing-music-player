@@ -31,6 +31,12 @@ object QingDimen {
     val MinTouchTarget: Dp = 48.dp
     val RowHeight: Dp = 56.dp
     val ArtSize: Dp = 48.dp
+
+    // 播放页：封面封顶高度与歌词区保底高度。
+    // 歌词区必须有个硬下限——Column 的 weight 在矮屏上可能被压成 0 高度，
+    // 一被压成 0，整块歌词（连"暂无歌词"提示）都会被裁掉，看起来就是"没歌词"。
+    val CoverMaxHeight: Dp = 200.dp
+    val LyricMinHeight: Dp = 120.dp
 }
 
 /**

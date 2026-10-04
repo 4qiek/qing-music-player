@@ -8,14 +8,14 @@
 
 - 包名：`com.qing.player`
 - minSdk 26（Android 8.0）/ targetSdk 34 / compileSdk 34
-- 版本：1.3.0
+- 版本：1.3.1
 
 ## 下载安装包
 
 预编译的 APK 在 [Releases](https://github.com/4qiek/qing-music-player/releases) 页面：
 
 ```
-https://github.com/4qiek/qing-music-player/releases/download/v1.3.0-android/qing-android-v1.3.0.apk
+https://github.com/4qiek/qing-music-player/releases/download/v1.3.1-android/qing-android-v1.3.1.apk
 ```
 
 支持 Android 8.0 及以上。安装包使用**调试签名**，可覆盖安装同签名的旧版本，歌单与收藏不会丢失。
